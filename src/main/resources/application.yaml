@@ -1,0 +1,36 @@
+# 1. Application settings
+server:
+  port: 80
+  servlet:
+    session:
+      timeout: 1800s
+  tomcat:
+    uri-encoding: UTF-8
+
+# 2. Database settings
+spring:
+  application:
+    name: orange-server
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
+  datasource:
+    url: jdbc:postgresql://13.124.67.214:5432/orange
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: tmdrms159
+
+# 3. JWT
+jwt:
+  loginUri : '/api/authenticate'
+  secret: 'n2r5u8x/A%D*G-KaPdSgVkYp3s6v9y$B&E(H+MbQeThWmZq4t7w!z%C*F-J@NcRf'
+  header: 'Authorization'
+  prefix: 'Bearer '
+  type: 'JWT'
+  issuer: 'secure-api'
+  audience: 'secure-app'
