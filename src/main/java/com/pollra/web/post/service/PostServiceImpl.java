@@ -14,41 +14,63 @@ import com.pollra.web.post.tool.PostDataPretreatmentTool;
 import com.pollra.web.repository.PostDataRepository;
 import com.pollra.web.repository.PostInfoRepository;
 import com.pollra.web.repository.PostListRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
+@Slf4j
 public class PostServiceImpl implements PostService{
 
     private PostDataRepository dataRepository;
     private PostInfoRepository infoRepository;
     private PostListRepository listRepository;
-    private PostDataPretreatmentTool dataTool;
+    private PostDataPretreatmentTool tool;
+    private HttpServletRequest request;
 
-    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository) {
+    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository, PostDataPretreatmentTool dataTool, HttpServletRequest request) {
         this.dataRepository = dataRepository;
         this.infoRepository = infoRepository;
         this.listRepository = listRepository;
-        this.dataTool = new PostDataPretreatmentTool();
+        this.tool = dataTool;
+        this.request = request;
     }
+
     /**
      * create
      */
-    public void createOne(HttpServletRequest request) throws PostServiceException {
-        PostData postData = dataTool.getPostData(request);
-        PostInfo postInfo = dataTool.getPostInfo(request);
-
+    public PostData createOne() throws PostServiceException {
+        log.info("PostServiceImpl.createOne() start");
+        PostData postData = tool.getPostData(request);
+        log.info("PostServiceImpl.createOne() count 2");
+        PostInfo postInfo = tool.getPostInfo(request);
+        // 데이터 유효성 검사
+        log.info("PostServiceImpl.createOne() data check");
+        if(tool.isNull(TargetPost.DATA, postData)){
+            throw new PostDataNotFoundException("입력되지 않은 데이터가 존재합니다.");
+        }
+        log.info("createOnePostData start");
         // PostData 를 생성 후 DB에 입력
-        createOnePostData(postData);
+        postData = createOnePostData(postData);
+        log.info("createOnePostData end");
 
+        log.info("createOnePostInfo start");
         // PostInfo 를 생성 후 DB에 입력
-        createOnePostInfo(postData.getNum(), postInfo);
+        postInfo = createOnePostInfo(postData.getNum(), postInfo);
+        log.info("createOnePostInfo end");
 
+        log.info("createOnePostList start");
         // PostList 를 생성 후 DB에 입력
         createOnePostList(postData, postInfo);
+        log.info("createOnePostList end, return");
+        return postData;
     }
 
     /**
@@ -61,14 +83,18 @@ public class PostServiceImpl implements PostService{
     private PostData createOnePostData(PostData postData)
         throws IncorrectPostDataException,
             PostDataInsertException {
-        // 데이터 정합성 검사
-        if(isNull_postData(postData)){
+        // 데이터 유효성 검사
+        if(tool.isNull(TargetPost.DATA,postData)){
             // 입력한 데이터가 올바르지 않습니다.
             throw new IncorrectPostDataException("Post data entered is not valid.");
         }
+        // 데이터 이스케이프 처리
+        postData.setTitle(escapeString(postData.getTitle()));
+        postData.setPostContent(escapeString(postData.getPostContent()));
+
         // Post 1 개 DB에 입력
         PostData resultPostData = dataRepository.save(postData);
-        if(isNull(TargetPost.DATA, resultPostData)){
+        if(tool.isNull(TargetPost.DATA, resultPostData)){
             throw new PostDataInsertException("return value of the input is not checked.");
         }
         return resultPostData;
@@ -96,7 +122,8 @@ public class PostServiceImpl implements PostService{
         // 기본 postInfo 작성
         postInfo.setNum(postNum);
         postInfo.setDate(new Date(System.currentTimeMillis()).toString());
-        postInfo.setUri("1");
+        postInfo.setUri(postNum+"");
+        postInfo.setOwner(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
 
         // 작성자의 글을 카운트하고 Uri 에 입력
         ownerCount = infoRepository.countByOwner(postInfo.getOwner());
@@ -111,7 +138,7 @@ public class PostServiceImpl implements PostService{
         }catch (Exception e){
             throw new PostInfoInsertException("There was a problem entering the info");
         }
-        if(isNull(TargetPost.INFO,resultPostInfo)){
+        if(tool.isNull(TargetPost.INFO,resultPostInfo)){
             // 입력 과정 오류
             throw new PostInfoInsertException("return value of the input is not checked.");
         }
@@ -140,7 +167,7 @@ public class PostServiceImpl implements PostService{
 
         // 데이터를 DB에 입력
         PostList dbInsertResult = listRepository.save(postList);
-        if(isNull(TargetPost.LIST, dbInsertResult)){
+        if(tool.isNull(TargetPost.LIST, dbInsertResult)){
             throw new PostListInsertException("return value of the input is not checked.");
         }
         return dbInsertResult;
@@ -149,67 +176,46 @@ public class PostServiceImpl implements PostService{
      * delete
      */
 
-    public void deleteOne(HttpServletRequest request){
+    public void deleteOne(){
 
     }
 
     /**
      * update
      */
-    public void updateOne(HttpServletRequest request){
+    public void updateOne(){
 
     }
     /**
      * read
      */
-    public Object readOne(TargetPost targetPost, HttpServletRequest request){
+    public Object readOne(TargetPost targetPost){
         return null;
     }
 
-    public List<Object> readList(TargetPost targetPost, HttpServletRequest request){
+    public List<Object> readList(TargetPost targetPost){
         return null;
     }
     /**
      * other method
      */
 
-    /**
-     * 입력 객체가 null 일 경우 true 리턴
-     * @return
-     *  true : 입력 객체의 데이터중 null 이 존재합니다.
-     *  false : 입력 객체가 정상적입니다.
-     */
-    private boolean isNull(TargetPost targetPost, Object o){
-        switch (targetPost){
-            case DATA:
-                return isNull_postData((PostData) o);
-            case INFO:
-                return isNull_postInfo((PostInfo) o);
-            case LIST:
-                return isNull_postList((PostList) o);
-            default:
-                return false;
-        }
-    }
+    // 이스케이프 처리
+    private String escapeString(String text){
+        Map<String, String> escape = new HashMap<>();
+        escape.put("&","&amp;");
+        escape.put("<","&lt;");
+        escape.put(">","&gt;");
+        escape.put("\"","&quot;");
+        escape.put("\'","&#39;");
+        escape.put("/","&#x2F;");
+        escape.put("`","&#x60;");
+        escape.put("=","&#x3D;");
 
-    private boolean isNull_postData(PostData postData){
-        if(postData.getTitle() == "") return true;
-        if (postData.getPostContent()=="") return true;
-        return false;
-    }
-    private boolean isNull_postInfo(PostInfo postInfo){
-        if(postInfo == null) return true;
-        if(postInfo.getNum() == null && postInfo.getNum() < 0) return true;
-        if(postInfo.getUri()=="") return true;
-        if(postInfo.getDate() == "") return true;
-        if(postInfo.getOwner()=="") return true;
-        return false;
-    }
-    private boolean isNull_postList(PostList postList){
-        if(postList.getOwner() == "") return true;
-        if(postList.getDate() == "") return true;
-        if(postList.getTitle() == "") return true;
-        if(postList.getUri() == "") return true;
-        return false;
+        for(Map.Entry<String, String> item : escape.entrySet()){
+            text.replaceAll(item.getKey(), item.getValue());
+        }
+
+        return text;
     }
 }

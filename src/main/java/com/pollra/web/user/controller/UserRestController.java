@@ -1,5 +1,8 @@
 package com.pollra.web.user.controller;
 
+import com.pollra.aop.jwt.anno.TokenCertification;
+import com.pollra.aop.jwt.anno.TokenCredential;
+import com.pollra.aop.jwt.config.JwtConstants;
 import com.pollra.config.security.SecurityConstants;
 import com.pollra.web.user.domain.UserAccount;
 import com.pollra.web.user.domain.en.AccessClassification;
@@ -18,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -75,27 +79,31 @@ public class UserRestController {
             // 성공적인 데이터 저장.
             return new ResponseEntity<String>("OK",HttpStatus.OK);
         }catch (NullPointerException e) {
-            log.info(e.toString());
             return new ResponseEntity<Error>(new Error("데이터를 확인할 수 없습니다."), HttpStatus.BAD_REQUEST);
         }catch (UserServiceException e){
-            String[] eme_a = e.toString().split("[.]");
-            log.info(eme_a[eme_a.length-1]);
             return new ResponseEntity<Error>(new Error(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
-
     /**
-     * 로그인은 필터로 수행
+     * 로그인
      */
+    @TokenCredential
+    @PostMapping("public/login")
+    public ResponseEntity<?> login(){
+        if(!StringUtils.isEmpty(request.getAttribute(JwtConstants.TOKEN_HEADER).toString())){
+            return new ResponseEntity<String>("OK",HttpStatus.OK);
+        }
+        return new ResponseEntity<Error>(new Error("망함"),HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     /**
      * 회원 정보 수정
      * @return
      */
-    @PutMapping("protected/users")
-    public ResponseEntity<?> updateUserAccount(){
-
-        return null;
+    @TokenCertification
+    @PutMapping("protected/users/{num}")
+    public ResponseEntity<?> updateUserAccount(@PathVariable int num){
+        return new ResponseEntity<Integer>(num,HttpStatus.OK);
     }
 
     /**

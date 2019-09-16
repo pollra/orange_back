@@ -1,5 +1,6 @@
 package com.pollra.web.post.service;
 
+import com.pollra.web.post.domain.PostData;
 import com.pollra.web.post.domain.TargetPost;
 import org.springframework.stereotype.Service;
 
@@ -8,12 +9,12 @@ import java.util.List;
 
 @Service
 public interface PostService {
-    void createOne(HttpServletRequest request);
+    PostData createOne();
 
-    void deleteOne(HttpServletRequest request);
+    void deleteOne();
 
-    void updateOne(HttpServletRequest request);
+    void updateOne();
 
-    Object readOne(TargetPost targetPost, HttpServletRequest request);
-    List<Object> readList(TargetPost targetPost, HttpServletRequest request);
+    Object readOne(TargetPost targetPost);
+    List<Object> readList(TargetPost targetPost);
 }
