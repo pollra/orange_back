@@ -3,7 +3,7 @@ package com.pollra.web.user.controller;
 import com.pollra.aop.jwt.anno.TokenCertification;
 import com.pollra.aop.jwt.anno.TokenCredential;
 import com.pollra.aop.jwt.config.JwtConstants;
-import com.pollra.config.security.SecurityConstants;
+import com.pollra.response.ApiDataDetail;
 import com.pollra.web.user.domain.UserAccount;
 import com.pollra.web.user.domain.en.AccessClassification;
 import com.pollra.web.user.domain.en.Range;
@@ -12,12 +12,8 @@ import com.pollra.web.user.exception.*;
 import com.pollra.web.user.service.UserService;
 import com.pollra.web.user.tool.data.UserDataPretreatmentTool;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.jni.Status;
-import org.hibernate.annotations.Target;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -25,14 +21,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.HashMap;
 import java.util.Map;
 
 @Controller
 @CrossOrigin
 @Slf4j
-@RequestMapping("/api")
+@RequestMapping("/api/users")
 public class UserRestController {
     private UserDataPretreatmentTool tool;
     private UserService userService;
@@ -47,20 +41,50 @@ public class UserRestController {
     }
 
     /**
-     * 아이디 조회
+     * 회원 정보 수정
      * @return
      */
-    @PostMapping("public/users/id")
-    public ResponseEntity<?> getUserData(){
-        UserAccount userAccount = null;
-        try {
-            userAccount = (UserAccount) userService.readOne(AccessClassification.ID);
-        }catch (UserServiceException e){
-            return new ResponseEntity<Error>(new Error(e.getMessage()),HttpStatus.INTERNAL_SERVER_ERROR);
+    @TokenCertification
+    @PutMapping("target/{range}")
+    public ResponseEntity<?> updateUserAccount(@PathVariable String range) {
+        try{
+            switch (range) {
+                case "email":
+                    userService.updateOne(Range.EMAIL);
+                    break;
+                case "pw":
+                    userService.updateOne(Range.PWS);
+                    break;
+                default:
+                    return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("올바르지 않은 요청"), HttpStatus.BAD_REQUEST);
+            }
+        }catch (UserIdNotFoundException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }catch (UsernameNotFoundException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.NOT_ACCEPTABLE);
+        }catch (SelectionNotFoundException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+        }catch(Throwable e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>(userAccount.getId(),HttpStatus.OK);
+        return new ResponseEntity<Integer>(1,HttpStatus.OK);
     }
-    @PostMapping("public/users")
+
+    /**
+     * 회원 정보 삭제
+     * @return
+     */
+    @DeleteMapping()
+    public ResponseEntity<?> deleteUserAccount(){
+        return null;
+    }
+
+    /**
+     * 회원 가입
+     *
+     * @return
+     */
+    @PostMapping
     public ResponseEntity<?> insertOneUser(){
         // 회원가입 로직
         UserAccount insertAccount = tool.getUserAccount(Range.ALL);
@@ -77,41 +101,43 @@ public class UserRestController {
 
             log.info(insertAccount.getId()+"님의 데이터가 성공적으로 저장되었습니다.");
             // 성공적인 데이터 저장.
-            return new ResponseEntity<String>("OK",HttpStatus.OK);
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK"),HttpStatus.OK);
         }catch (NullPointerException e) {
-            return new ResponseEntity<Error>(new Error("데이터를 확인할 수 없습니다."), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 확인할 수 없습니다."), HttpStatus.BAD_REQUEST);
         }catch (UserServiceException e){
-            return new ResponseEntity<Error>(new Error(e.getMessage()), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
+
+    /**
+     * 아이디 조회
+     * @return
+     */
+    @PostMapping("check/id")
+    public ResponseEntity<?> getUserData(){
+        UserAccount userAccount = null;
+        try {
+            userAccount = (UserAccount) userService.readOne(AccessClassification.ID);
+        }catch (UserServiceException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()),HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("ok", userAccount.getId()),HttpStatus.OK);
+    }
+
     /**
      * 로그인
      */
     @TokenCredential
-    @PostMapping("public/login")
+    @PostMapping("login")
     public ResponseEntity<?> login(){
-        if(!StringUtils.isEmpty(request.getAttribute(JwtConstants.TOKEN_HEADER).toString())){
-            return new ResponseEntity<String>("OK",HttpStatus.OK);
+        try {
+            if (!StringUtils.isEmpty(request.getAttribute(JwtConstants.TOKEN_HEADER).toString())) {
+                log.info("로그인 성공 토큰을 발급했습니다.");
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("login success",request.getAttribute(JwtConstants.TOKEN_HEADER)), HttpStatus.OK);
+            }
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()),HttpStatus.INTERNAL_SERVER_ERROR);
+        }catch (Throwable e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<Error>(new Error("망함"),HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * 회원 정보 수정
-     * @return
-     */
-    @TokenCertification
-    @PutMapping("protected/users/{num}")
-    public ResponseEntity<?> updateUserAccount(@PathVariable int num){
-        return new ResponseEntity<Integer>(num,HttpStatus.OK);
-    }
-
-    /**
-     * 회원 정보 삭제
-     * @return
-     */
-    @DeleteMapping("private/users")
-    public ResponseEntity<?> deleteUserAccount(){
-        return null;
     }
 }

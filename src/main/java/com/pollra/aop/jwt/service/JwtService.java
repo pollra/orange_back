@@ -23,6 +23,7 @@ import org.springframework.util.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
@@ -53,8 +54,7 @@ public class JwtService {
      * @throws IllegalArgumentException
      * @throws JwtServiceException
      */
-    public void certification() {
-        try {
+    public void certification() throws Throwable{
             var token = request.getHeader(JwtConstants.TOKEN_HEADER);
             // 저장한 토큰 데이터가 null 인가?
             if (StringUtils.isEmpty(token) && !token.startsWith(JwtConstants.TOKEN_PREFIX)) {
@@ -70,11 +70,9 @@ public class JwtService {
                     .getBody()
                     .getSubject();
             log.info("username: " + username);
-            var authorities = ((List<?>) parsedToken.getBody()
-                    .get("rol")).stream()
-                    .map(authority -> new SimpleGrantedAuthority((String) authority))
-                    .collect(Collectors.toList());
-            log.info("authorities: " + authorities);
+            var authorities = ((List<?>) parsedToken.getBody().get("rol"));
+
+//            log.warn("입력된 유저 권한: {}",parsedToken.getBody().get("rol"));
 
             // 유저의 권한이 맞는지 확인
             UserAccount userAccount = null;
@@ -88,35 +86,28 @@ public class JwtService {
                 log.warn("[!] Jwt 유저 권한 변조 감지. [user: {}, auth: {}, 변조하려는 권한: {}]", username, userAccount.getAuth(), authorities);
                 throw new JwtTamperingDetectionException("토큰데이터 변조가 감지되었습니다.");
             }
-
             request.setAttribute("jwt-user", username);
             request.setAttribute("jwt-auth", userAccount.getAuth());
-        }catch (Exception e){
-            log.info(e.getMessage());
-        }
     }
 
     // 인가
-    public void credential() {
-        try {
-            // 토큰 데이터가 이미 존재하면 예외 발동
-            String header = request.getHeader(JwtConstants.TOKEN_HEADER);
-            // 저장한 토큰 데이터가 null 인가?
-            if (!StringUtils.isEmpty(header) && header.startsWith(JwtConstants.TOKEN_PREFIX)) {
-                throw new JwtFindException("이미 로그인 되어있습니다.");
-            }
-
-            // 데이터 존재여부, 가입데이터, 비밀번호 일치 여부 를 순서대로 확인 후 DB 에서 가져온 데이터를 리턴.
-            UserAccount user = checkUserData();
-
-            // Jwt 를 만들어 token 에 저장
-            String token = createJwt(user);
-
-            // request 에 Authorization 이름으로 토큰값 저장 후 컨트롤러에서 사용할 수 있게 함.
-            request.setAttribute(JwtConstants.TOKEN_HEADER, token);
-        }catch (Exception e){
-            log.info(e.getMessage());
+    public void credential() throws Throwable{
+        // 토큰 데이터가 이미 존재하면 예외 발동
+        String header = request.getHeader(JwtConstants.TOKEN_HEADER);
+        // 저장한 토큰 데이터가 null 인가?
+        if (!StringUtils.isEmpty(header) && header.startsWith(JwtConstants.TOKEN_PREFIX)) {
+            throw new JwtFindException("이미 로그인 되어있습니다.");
         }
+
+        // 데이터 존재여부, 가입데이터, 비밀번호 일치 여부 를 순서대로 확인 후 DB 에서 가져온 데이터를 리턴.
+        UserAccount user = checkUserData();
+        log.warn("user: {}", user.toString());
+
+        // Jwt 를 만들어 token 에 저장
+        String token = createJwt(user);
+
+        // request 에 Authorization 이름으로 토큰값 저장 후 컨트롤러에서 사용할 수 있게 함.
+        request.setAttribute(JwtConstants.TOKEN_HEADER, JwtConstants.TOKEN_PREFIX+token);
     }
 
     private UserAccount checkUserData() throws JwtServiceException{
@@ -136,7 +127,7 @@ public class JwtService {
         if(!passwordEncoder.matches(user.getPassword(), dbAccessUser.getPassword())){
             throw new JwtDataAccessException("비밀번호가 일치하지 않습니다.");
         }
-        return user;
+        return dbAccessUser;
     }
 
     private String createJwt(UserAccount user) throws IOException{

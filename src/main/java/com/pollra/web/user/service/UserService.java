@@ -16,7 +16,7 @@ public interface UserService extends UserDetailsService {
     void createOne() throws UserServiceException;
 
     // update
-    void updateOne() throws UserServiceException;
+    void updateOne(Range range) throws UserServiceException;
 
     // read
     int countOne(AccessClassification ac) throws UserServiceException;

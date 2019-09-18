@@ -1,7 +1,7 @@
 package com.pollra.web.post.controller;
 
+import com.pollra.response.ApiDataDetail;
 import com.pollra.web.post.domain.PostData;
-import com.pollra.web.post.service.PostService;
 import com.pollra.web.post.service.PostServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,22 +19,22 @@ public class PostController {
         this.postService = postService;
     }
 
-    @GetMapping("public/posts/{numberPath}")
+    @GetMapping("posts/target/{numberPath}")
     public RequestEntity<?> getOnePost(@PathVariable String numberPath){
         return null;
     }
 
-    @PostMapping("protected/posts/create")
+    @PostMapping("posts")
     public ResponseEntity<?> createOnePost(){
         PostData resultPostData = null;
         try {
-            log.info("/protected/posts/create logic start");
+            log.info("/posts logic start");
             resultPostData = postService.createOne();
 
             return new ResponseEntity<Long>(resultPostData.getNum(),HttpStatus.OK);
         }catch (Exception e){
             log.info(e.getMessage());
-            return new ResponseEntity<Error>(new Error(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

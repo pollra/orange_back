@@ -25,7 +25,7 @@ public class BlogController {
         this.blogService = blogService;
     }
 
-    @GetMapping("public/blog")
+    @GetMapping("blog")
     public ResponseEntity<?> getBlogInfo(HttpServletRequest request){
         BlogInfo blogInfo = new BlogInfo();
 //        InfoPrint.headersPrint(request);

@@ -64,16 +64,33 @@ public class UserAccountServiceImpl implements UserService{
      * update
      */
     @Override
-    public void updateOne() {
+    public void updateOne(Range range) throws UserIdNotFoundException,UsernameNotFoundException,SelectionNotFoundException{
         // 유저 데이터 수정
         // 요청받은 데이터를 객체에 저장함
-        UserAccount insertUserAccount = tool.getUserAccount(Range.ALL);
-
-        // 데이터가 null 일 경우 exception 발생
-        if(tool.isNull(TargetUser.ACCOUNT, insertUserAccount)){
-            throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
+        // 경우는 두가지. 비밀번호 변경과 이메일 변경
+        // 두가지의 경우 들어오는 데이터로 볼수있는것은
+        // password 수정 : username, password, password-match
+        // email 수정 : username, email
+        UserAccount insertUserAccount = new UserAccount();
+        switch (range){
+            // 데이터가 null 일 경우 exception 발생
+            case EMAIL:
+                insertUserAccount = tool.getUserAccount(Range.EMAIL);
+                insertUserAccount.setId(tool.getUserAccount(Range.ID).getId());
+                if(tool.isNull(TargetUser.ACCOUNT_ID_EMAIL, insertUserAccount)) throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
+                break;
+            case PWS:
+                insertUserAccount = tool.getUserAccount(Range.PWS);
+                insertUserAccount.setId(tool.getUserAccount(Range.ID).getId());
+                if(tool.isNull(TargetUser.ACCOUNT_ID_PWD, insertUserAccount)) throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
+                break;
+            default:
+                log.info("해당 선택지는 구현되지 않은 선택지입니다.");
+                throw new SelectionNotFoundException("해당 선택지는 구현되지 않은 선택지입니다.");
         }
+
         // 해당 메소드에서 데이터를 불러오고 데이터가 존재하는지 여부도 판단함.
+        // 데이터 존재 여부만 판단하기 위해 사용.
         UserAccount userAccessAccount = (UserAccount)readOne(AccessClassification.ID);
 
         UserAccount dbResultAccount = accountRepository.save(insertUserAccount);

@@ -6,7 +6,9 @@ import com.pollra.web.user.domain.en.TargetUser;
 import com.pollra.web.user.domain.UserAccount;
 import com.pollra.web.user.exception.SelectionNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Null;
@@ -43,6 +45,11 @@ public class UserDataPretreatmentTool {
                         ,userAccount.getPasswordMatch()
                 );
                 return userAccount;
+            case EMAIL:
+                userAccount.setEmail(get(USER_EMAIL));
+                log.warn("insert email: {}"
+                        ,userAccount.getEmail()
+                );
             case ALL:
                 userAccount.setId(get(USER_ID));
                 userAccount.setPassword(get(USER_PW));
@@ -62,29 +69,55 @@ public class UserDataPretreatmentTool {
     }
 
     public boolean isNull(TargetUser targetUser, Object o){
+        TargetUser target = TargetUser.ACCOUNT;
         try {
             switch (targetUser) {
                 case ACCOUNT:
+                    target = TargetUser.ACCOUNT;
                     return isNull_account((UserAccount) o);
                 case ACCOUNT_ID:
+                    target = TargetUser.ACCOUNT_ID;
                     return isNull_account_id((UserAccount) o);
+                case ACCOUNT_ID_EMAIL:
+                    target = TargetUser.ACCOUNT_ID_EMAIL;
+                    return isNull_account_id_range(Range.EMAIL, (UserAccount) o);
+                case ACCOUNT_ID_PWD:
+                    target = TargetUser.ACCOUNT_ID_PWD;
+                    return isNull_account_id_range(Range.PWS, (UserAccount) o);
                 default:
                     throw new SelectionNotFoundException("미구현 서비스입니다.");
             }
         }catch (NullPointerException e){
+            log.warn("isNull 함수에서 {} 를 타겟으로 실행하던 도중 NullPointerException 발생",target.name());
             return true;
         }
     }
 
-    private boolean isNull_account(UserAccount userAccount){
+    private boolean isNull_account(UserAccount userAccount) throws NullPointerException{
         if(userAccount.getId().isEmpty()) return true;
         if(userAccount.getPassword().isEmpty()) return true;
         if(userAccount.getPasswordMatch().isEmpty()) return true;
         return false;
     }
 
-    private boolean isNull_account_id(UserAccount userAccount){
+    private boolean isNull_account_id(UserAccount userAccount) throws NullPointerException{
         if(userAccount.getId().isEmpty()) return true;
+        return false;
+    }
+
+    private boolean isNull_account_id_range(Range range, UserAccount userAccount) throws NullPointerException{
+        if(userAccount.getId().isEmpty()) return true;
+        switch (range){
+            case EMAIL:
+                if(StringUtils.isEmpty(userAccount.getEmail())) return true;
+                break;
+            case PWS:
+                if(StringUtils.isEmpty(userAccount.getPassword())) return true;
+                if(StringUtils.isEmpty(userAccount.getPasswordMatch())) return true;
+                break;
+            default:
+                log.warn("선택된 항목은 존재하지 않는 항목입니다.");
+        }
         return false;
     }
 
