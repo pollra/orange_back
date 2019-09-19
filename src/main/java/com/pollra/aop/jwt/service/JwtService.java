@@ -111,10 +111,8 @@ public class JwtService {
     }
 
     private UserAccount checkUserData() throws JwtServiceException{
-        UserAccount user = new UserAccount();
-        try {
-            user = tool.getUserAccount();
-        }catch (NullPointerException e){
+        UserAccount user = tool.getUserAccount();
+        if(StringUtils.isEmpty(user.getId())){
             throw new JwtDataAccessException("데이터를 확인할 수 없습니다.");
         }
 

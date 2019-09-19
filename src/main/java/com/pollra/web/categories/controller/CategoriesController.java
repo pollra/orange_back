@@ -29,7 +29,8 @@ public class CategoriesController {
         List<CategoriesDAO> categories = categoriesService.getCategoriesList("pollra");
         log.info("categories.size(): "+ categories.size());
         if(categories.size() >= 1){
-            return new ResponseEntity<List<CategoriesDAO>>(categories, HttpStatus.OK);
+//            return new ResponseEntity<List<CategoriesDAO>>(categories, HttpStatus.OK);
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("ok", categories), HttpStatus.OK);
         }
         return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터가 존재하지 않습니다."), HttpStatus.NOT_FOUND);
     }

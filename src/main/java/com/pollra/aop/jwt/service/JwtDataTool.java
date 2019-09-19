@@ -32,7 +32,8 @@ public class JwtDataTool {
     }
 
     public boolean isNull(Range range,UserAccount userAccount){
-        switch (range){
+        try{
+            switch (range){
             case ID:
                 return isNull_id(userAccount);
             case PW:
@@ -43,27 +44,32 @@ public class JwtDataTool {
                 return isNull_id_pw_auth(userAccount);
             default:
                 throw new JwtToolException("JwtDataTool : 선택된 항목은 존재하지 않는 항목입니다.");
+            }
+        }catch (NullPointerException e){
+
+            return true;
+//            throw new JwtToolException("데이터를 확인하던 도중 NullPointerException 이 발생했습니다.");
         }
     }
 
-    private boolean isNull_id(UserAccount userAccount){
+    private boolean isNull_id(UserAccount userAccount) throws NullPointerException{
         if(StringUtils.isEmpty(userAccount.getId())) return true;
         return false;
     }
 
-    private boolean isNull_pw(UserAccount userAccount){
+    private boolean isNull_pw(UserAccount userAccount) throws NullPointerException{
         if(StringUtils.isEmpty(userAccount.getPassword())) return true;
         if(StringUtils.isEmpty(userAccount.getPasswordMatch())) return true;
         return false;
     }
 
-    private boolean isNull_id_pw(UserAccount userAccount){
+    private boolean isNull_id_pw(UserAccount userAccount) throws NullPointerException{
         if(StringUtils.isEmpty(userAccount.getId())) return true;
         if(StringUtils.isEmpty(userAccount.getPassword())) return true;
         return false;
     }
 
-    private boolean isNull_id_pw_auth(UserAccount userAccount){
+    private boolean isNull_id_pw_auth(UserAccount userAccount) throws NullPointerException{
         if(StringUtils.isEmpty(userAccount.getId())) return true;
         if(StringUtils.isEmpty(userAccount.getPassword())) return true;
         if(StringUtils.isEmpty(userAccount.getAuth())) return true;
