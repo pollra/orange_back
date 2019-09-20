@@ -56,7 +56,8 @@ public class JwtService {
      */
     public void certification() throws Throwable{
         System.out.println("certification start");
-            var token = request.getHeader(JwtConstants.TOKEN_HEADER);
+        var token = request.getHeader(JwtConstants.TOKEN_HEADER);
+        try{
             // 저장한 토큰 데이터가 null 인가?
             if (StringUtils.isEmpty(token) && !token.startsWith(JwtConstants.TOKEN_PREFIX)) {
                 throw new JwtNotFoundException("토큰 데이터가 존재하지 않습니다.");
@@ -89,6 +90,17 @@ public class JwtService {
             }
             request.setAttribute("jwt-user", username);
             request.setAttribute("jwt-auth", userAccount.getAuth());
+        }catch (ExpiredJwtException exception){
+            log.warn("만료된 JWT 구문 분석 요청 : {} failed : {}", token, exception.getMessage());
+        }catch (UnsupportedJwtException exception){
+            log.warn("지원되지 않는 JWT 구문 분석 요청 : {} failed : {}", token, exception.getMessage());
+        }catch (MalformedJwtException exception){
+            log.warn("유효하지 않은 JWT 구문 분석 요청 : {} failed : {}", token, exception.getMessage());
+        }catch (SignatureException exception) {
+            log.warn("유효하지 않은 서명으로 구문 분석 JWT 요청 : {} failed : {}", token, exception.getMessage());
+        }catch (IllegalArgumentException exception){
+            log.warn("비어 있거나 널인 JWT 구문 분석 요청 : {} failed : {}", token, exception.getMessage());
+        }
     }
 
     // 인가
@@ -111,6 +123,10 @@ public class JwtService {
         // request 에 Authorization 이름으로 토큰값 저장 후 컨트롤러에서 사용할 수 있게 함.
         request.setAttribute(JwtConstants.TOKEN_HEADER, JwtConstants.TOKEN_PREFIX+token);
         request.setAttribute("loginUser", user.getId());
+    }
+
+    public void tokenLogout() throws Throwable{
+
     }
 
     private UserAccount checkUserData() throws JwtServiceException{

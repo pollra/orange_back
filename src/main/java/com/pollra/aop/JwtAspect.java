@@ -1,6 +1,10 @@
 package com.pollra.aop;
 
+import com.pollra.aop.jwt.exception.JwtServiceException;
 import com.pollra.aop.jwt.service.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -10,6 +14,7 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.SignatureException;
 
 @Component
 @Aspect
@@ -45,11 +50,29 @@ public class JwtAspect {
      *
      * @return
      * @throws Throwable
+     * @throws ExpiredJwtException
+     * @throws UnsupportedJwtException
+     * @throws MalformedJwtException
+     * @throws SignatureException
+     * @throws IllegalArgumentException
+     * @throws JwtServiceException
      */
     @Before("@annotation(com.pollra.aop.jwt.anno.TokenCredential)")
     public void tokenCredential(JoinPoint jp) throws Throwable{
         try {
             jwtService.credential();
+        }catch (ExpiredJwtException e){
+            request.setAttribute("error",e.getMessage());
+        }catch (UnsupportedJwtException e){
+            request.setAttribute("error",e.getMessage());
+        }catch (MalformedJwtException e){
+            request.setAttribute("error",e.getMessage());
+        }catch (SignatureException e){
+            request.setAttribute("error",e.getMessage());
+        }catch (IllegalArgumentException e){
+            request.setAttribute("error",e.getMessage());
+        }catch (JwtServiceException e){
+            request.setAttribute("error",e.getMessage());
         }catch (Throwable e){
             request.setAttribute("error",e.getMessage());
         }
@@ -68,5 +91,10 @@ public class JwtAspect {
         }catch (Throwable e){
             request.setAttribute("error",e.getMessage());
         }
+    }
+
+    @Before("@annotation(com.pollra.aop.jwt.anno.TokenLogout)")
+    public void tokenLogout(JoinPoint jp) throws Throwable{
+
     }
 }

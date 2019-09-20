@@ -54,6 +54,7 @@ public class UserAccountServiceImpl implements UserService{
         }
 
         userAccount.setPassword(passwordEncoder.encode(userAccount.getPassword()));
+        userAccount.setPasswordMatch(passwordEncoder.encode(userAccount.getPasswordMatch()));
 
         // DB에 입력한다
         UserAccount dbInsertionResult = accountRepository.save(userAccount);
@@ -124,6 +125,7 @@ public class UserAccountServiceImpl implements UserService{
      * read
      */
     @Override
+    @Transactional
     public Object readOne(AccessClassification accessClassification)
             throws UserIdNotFoundException,UsernameNotFoundException,SelectionNotFoundException{
         // 유저 데이터를 하나 불러온다
@@ -146,6 +148,7 @@ public class UserAccountServiceImpl implements UserService{
     }
 
     @Override
+    @Transactional
     public int countOne(AccessClassification ac) throws UserServiceException {
         int result = -1;
         switch (ac){
