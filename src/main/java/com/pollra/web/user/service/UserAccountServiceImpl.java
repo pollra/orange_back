@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class UserAccountServiceImpl implements UserService{
      * create
      */
     @Override
+    @Transactional
     public void createOne()
             throws UserServiceException, NullPointerException {
         // 회원가입 폼을 통해 전달된 정보를 UserAccount 객체에 담는다
@@ -64,6 +66,7 @@ public class UserAccountServiceImpl implements UserService{
      * update
      */
     @Override
+    @Transactional
     public void updateOne(Range range) throws UserIdNotFoundException,UsernameNotFoundException,SelectionNotFoundException{
         // 유저 데이터 수정
         // 요청받은 데이터를 객체에 저장함
@@ -85,22 +88,36 @@ public class UserAccountServiceImpl implements UserService{
                 if(tool.isNull(TargetUser.ACCOUNT_ID_PWD, insertUserAccount)) throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
                 break;
             default:
-                log.info("해당 선택지는 구현되지 않은 선택지입니다.");
+                log.info("구현되지 않은 선택지입니다.");
                 throw new SelectionNotFoundException("해당 선택지는 구현되지 않은 선택지입니다.");
         }
+
 
         // 해당 메소드에서 데이터를 불러오고 데이터가 존재하는지 여부도 판단함.
         // 데이터 존재 여부만 판단하기 위해 사용.
         UserAccount userAccessAccount = (UserAccount)readOne(AccessClassification.ID);
-
-        UserAccount dbResultAccount = accountRepository.save(insertUserAccount);
+        UserAccount dbResultAccount;
+        switch (range){
+            // 데이터가 null 일 경우 exception 발생
+            case EMAIL:
+                accountRepository.updateByEmail(insertUserAccount.getEmail(), insertUserAccount.getId());
+                if(tool.isNull(TargetUser.ACCOUNT_ID_EMAIL, insertUserAccount)) throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
+                break;
+            case PWS:
+                accountRepository.updateByPassword(passwordEncoder.encode(insertUserAccount.getPassword()), passwordEncoder.encode(insertUserAccount.getPasswordMatch()), insertUserAccount.getId());
+                if(tool.isNull(TargetUser.ACCOUNT_ID_PWD, insertUserAccount)) throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
+                break;
+            default:
+                log.info("구현되지 않은 선택지입니다.");
+                throw new SelectionNotFoundException("해당 선택지는 구현되지 않은 선택지입니다.");
+        }
+//        UserAccount dbResultAccount = accountRepository.updateByPassword(insertUserAccount);
 
         // 저장 결과가 null 일 경우 데이터 저장에 실패.
         // exception 을 리턴함.
-        if(tool.isNull(TargetUser.ACCOUNT, dbResultAccount)){
-            throw new UserDataInsertionException("데이터 저장에 실패했습니다.");
-        }
-
+//        if(tool.isNull(TargetUser.ACCOUNT, dbResultAccount)){
+//            throw new UserDataInsertionException("데이터 저장에 실패했습니다.");
+//        }
     }
 
     /**

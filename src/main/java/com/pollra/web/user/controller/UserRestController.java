@@ -45,14 +45,15 @@ public class UserRestController {
      * @return
      */
     @TokenCertification
-    @PutMapping("target/{range}")
+    @PutMapping("type/{range}")
     public ResponseEntity<?> updateUserAccount(@PathVariable String range) {
+        System.out.println("updateUserAccount start");
         try{
             switch (range) {
                 case "email":
                     userService.updateOne(Range.EMAIL);
                     break;
-                case "pw":
+                case "password":
                     userService.updateOne(Range.PWS);
                     break;
                 default:
@@ -65,9 +66,10 @@ public class UserRestController {
         }catch (SelectionNotFoundException e){
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
         }catch(Throwable e){
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+            log.info(e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("서버 오류"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<Integer>(1,HttpStatus.OK);
+        return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("정보 변경에 성공했습니다."),HttpStatus.OK);
     }
 
     /**
@@ -93,10 +95,12 @@ public class UserRestController {
         try {
             if (tool.isNull(TargetUser.ACCOUNT, insertAccount)) {
                 // null 일 경우
-                throw new UserDataInsertionException("데이터가 null 입니다.");
+                throw new UserDataInsertionException("누락된 필수 입력항목이 존재합니다.");
             }
-            // 데이터 정합성 검사
+            // 데이터가 이미 존재하는지 검사
             userService.countOne(AccessClassification.ID);
+
+            // 데이터 하나를 저장
             userService.createOne();
 
             log.info(insertAccount.getId()+"님의 데이터가 성공적으로 저장되었습니다.");
@@ -133,7 +137,10 @@ public class UserRestController {
         try {
             if (!StringUtils.isEmpty(request.getAttribute(JwtConstants.TOKEN_HEADER).toString())) {
                 log.info("로그인 성공 토큰을 발급했습니다.");
-                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("login success",request.getAttribute(JwtConstants.TOKEN_HEADER)), HttpStatus.OK);
+                return new ResponseEntity<ApiDataDetail>(
+                        new ApiDataDetail(request.getAttribute("loginUser").toString()
+                                ,request.getAttribute(JwtConstants.TOKEN_HEADER)
+                        ), HttpStatus.OK);
             }
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()),HttpStatus.INTERNAL_SERVER_ERROR);
         }catch (Throwable e){

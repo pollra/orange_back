@@ -55,6 +55,7 @@ public class JwtService {
      * @throws JwtServiceException
      */
     public void certification() throws Throwable{
+        System.out.println("certification start");
             var token = request.getHeader(JwtConstants.TOKEN_HEADER);
             // 저장한 토큰 데이터가 null 인가?
             if (StringUtils.isEmpty(token) && !token.startsWith(JwtConstants.TOKEN_PREFIX)) {
@@ -92,10 +93,11 @@ public class JwtService {
 
     // 인가
     public void credential() throws Throwable{
+
         // 토큰 데이터가 이미 존재하면 예외 발동
         String header = request.getHeader(JwtConstants.TOKEN_HEADER);
         // 저장한 토큰 데이터가 null 인가?
-        if (!StringUtils.isEmpty(header) && header.startsWith(JwtConstants.TOKEN_PREFIX)) {
+        if (!StringUtils.isEmpty(header) || header.startsWith(JwtConstants.TOKEN_PREFIX)) {
             throw new JwtFindException("이미 로그인 되어있습니다.");
         }
 
@@ -108,6 +110,7 @@ public class JwtService {
 
         // request 에 Authorization 이름으로 토큰값 저장 후 컨트롤러에서 사용할 수 있게 함.
         request.setAttribute(JwtConstants.TOKEN_HEADER, JwtConstants.TOKEN_PREFIX+token);
+        request.setAttribute("loginUser", user.getId());
     }
 
     private UserAccount checkUserData() throws JwtServiceException{
