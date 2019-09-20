@@ -3,7 +3,6 @@ package com.pollra.aop.jwt.service;
 import com.pollra.aop.jwt.config.JwtConstants;
 import com.pollra.aop.jwt.config.Range;
 import com.pollra.aop.jwt.exception.*;
-import com.pollra.config.security.SecurityConstants;
 import com.pollra.web.repository.UserAccountRepository;
 import com.pollra.web.user.domain.UserAccount;
 import com.pollra.web.user.tool.data.UserDataPretreatmentTool;
@@ -11,23 +10,15 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -36,12 +27,14 @@ public class JwtService {
     private HttpServletRequest request;
     private PasswordEncoder passwordEncoder;
     private JwtDataTool tool;
+    private UserDataPretreatmentTool userTool;
 
-    public JwtService(UserAccountRepository repository, HttpServletRequest request, PasswordEncoder passwordEncoder, JwtDataTool tool) {
+    public JwtService(UserAccountRepository repository, HttpServletRequest request, PasswordEncoder passwordEncoder, JwtDataTool tool, UserDataPretreatmentTool userTool) {
         this.repository = repository;
         this.request = request;
         this.passwordEncoder = passwordEncoder;
         this.tool = tool;
+        this.userTool = userTool;
     }
 
     /**
@@ -59,20 +52,9 @@ public class JwtService {
         var token = request.getHeader(JwtConstants.TOKEN_HEADER);
         try{
             // 저장한 토큰 데이터가 null 인가?
-            if (StringUtils.isEmpty(token) && !token.startsWith(JwtConstants.TOKEN_PREFIX)) {
-                throw new JwtNotFoundException("토큰 데이터가 존재하지 않습니다.");
-            }
-            var signingKey = JwtConstants.JWT_SECRET.getBytes();
-
-            var parsedToken = Jwts.parser()
-                    .setSigningKey(signingKey)
-                    .parseClaimsJws(token.replace("Bearer", ""));
-            log.info("parsedToken: " + parsedToken);
-            var username = parsedToken
-                    .getBody()
-                    .getSubject();
-            log.info("username: " + username);
-            var authorities = ((List<?>) parsedToken.getBody().get("rol"));
+            JwtParsing jwtParsing = new JwtParsing(token).invoke();
+            String username = jwtParsing.getUsername();
+            List<?> authorities = jwtParsing.getAuthorities();
 
 //            log.warn("입력된 유저 권한: {}",parsedToken.getBody().get("rol"));
 
@@ -125,8 +107,25 @@ public class JwtService {
         request.setAttribute("loginUser", user.getId());
     }
 
+    /**
+     * 로그아웃
+     *
+     * @throws Throwable            : 예상하지 못한 에러
+     * @throws JwtNotFoundException : 토큰이 존재하지 않음
+     * @throws JwtFindException     : 변조된 토큰 요청
+     */
     public void tokenLogout() throws Throwable{
-
+        String token = request.getHeader(JwtConstants.TOKEN_HEADER);
+        JwtParsing jwtParsing = new JwtParsing(token).invoke();
+        if(StringUtils.isEmpty(token)){
+            throw new JwtNotFoundException("로그아웃 할 토큰이 존재하지 않습니다.");
+        }
+        UserAccount userAccount = userTool.getUserAccount(com.pollra.web.user.domain.en.Range.ID);
+        if(!jwtParsing.username.equals(userAccount.getId())){
+            throw new JwtFindException("토큰 데이터와 일치하지 않는 사용자의 요청입니다.");
+        }
+//        JwtParsing jwtParsing = new JwtParsing(token).invoke();
+        request.setAttribute(JwtConstants.TOKEN_HEADER, "");
     }
 
     private UserAccount checkUserData() throws JwtServiceException{
@@ -151,15 +150,51 @@ public class JwtService {
         String roles = user.getAuth();
 
         byte[] signingKey = JwtConstants.JWT_SECRET.getBytes();
-
+        log.warn("토큰 만료시간: {}", new SimpleDateFormat("yyyy.MM.dd(kk:mm-ss)").format(new Date(System.currentTimeMillis()+(1000*60*30))));
         return Jwts.builder()
                 .signWith(Keys.hmacShaKeyFor(signingKey), SignatureAlgorithm.HS512)
                 .setHeaderParam("typ",JwtConstants.TOKEN_TYPE)
                 .setIssuer(JwtConstants.TOKEN_ISSUER)
                 .setAudience(JwtConstants.TOKEN_AUDIENCE)
                 .setSubject(user.getId())
-                .setExpiration(new Date(System.currentTimeMillis()+864000000))
+                .setExpiration(new Date(System.currentTimeMillis()+(1000*60*30)))
                 .claim("rol",roles)
                 .compact();
+    }
+
+    private class JwtParsing {
+        private String token;
+        private String username;
+        private List<?> authorities;
+
+        public JwtParsing(String token) {
+            this.token = token;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public List<?> getAuthorities() {
+            return authorities;
+        }
+
+        public JwtParsing invoke() {
+            if (StringUtils.isEmpty(token) && !token.startsWith(JwtConstants.TOKEN_PREFIX)) {
+                throw new JwtNotFoundException("토큰 데이터가 존재하지 않습니다.");
+            }
+            var signingKey = JwtConstants.JWT_SECRET.getBytes();
+
+            var parsedToken = Jwts.parser()
+                    .setSigningKey(signingKey)
+                    .parseClaimsJws(token.replace("Bearer", ""));
+            log.info("parsedToken: " + parsedToken);
+            username = parsedToken
+                    .getBody()
+                    .getSubject();
+            log.info("username: " + username);
+            authorities = ((List<?>) parsedToken.getBody().get("rol"));
+            return this;
+        }
     }
 }

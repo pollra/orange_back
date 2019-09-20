@@ -2,6 +2,7 @@ package com.pollra.web.user.controller;
 
 import com.pollra.aop.jwt.anno.TokenCertification;
 import com.pollra.aop.jwt.anno.TokenCredential;
+import com.pollra.aop.jwt.anno.TokenLogout;
 import com.pollra.aop.jwt.config.JwtConstants;
 import com.pollra.response.ApiDataDetail;
 import com.pollra.web.user.domain.UserAccount;
@@ -145,6 +146,26 @@ public class UserRestController {
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()),HttpStatus.INTERNAL_SERVER_ERROR);
         }catch (Throwable e){
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * 로그아웃
+     * @return
+     */
+    @TokenLogout
+    @PostMapping("logout")
+    public ResponseEntity<?> logout(){
+        try {
+            if (request.getAttribute("error").toString().isEmpty()) {
+                // 에러 메세지가 존재하지 않음
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("로그아웃에 성공했습니다.", request.getAttribute(JwtConstants.TOKEN_HEADER)), HttpStatus.OK);
+            } else {
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
+            }
+        }catch (Throwable e){
+            log.info(e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("로그아웃에 성공했으나, 알 수 없는 문제가 발생했습니다.",""), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
