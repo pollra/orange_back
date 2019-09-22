@@ -10,6 +10,12 @@ import javax.servlet.http.HttpServletRequest;
 
 @Service
 public class PostDataPretreatmentTool {
+    private HttpServletRequest request;
+
+    public PostDataPretreatmentTool(HttpServletRequest request) {
+        this.request = request;
+    }
+
     // post data
     private final String DATA_TITLE = "title";
     private final String DATA_CONTENT = "content";
@@ -17,14 +23,14 @@ public class PostDataPretreatmentTool {
     // post info
     private final String INFO_IMG_PATH = "imgPath";
 
-    public PostData getPostData(HttpServletRequest request) {
+    public PostData getPostData() {
         PostData postData = new PostData();
         postData.setTitle(request.getParameter(DATA_TITLE));
         postData.setPostContent(request.getParameter(DATA_CONTENT));
         return postData;
     }
 
-    public PostInfo getPostInfo(HttpServletRequest request) {
+    public PostInfo getPostInfo() {
         PostInfo postInfo = new PostInfo();
         postInfo.setImgPath(request.getParameter(INFO_IMG_PATH));
         return postInfo;

@@ -2,12 +2,14 @@ package com.pollra.web.post.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
 
 @Entity
 @Getter
 @Setter
+@ToString
 @Table(name = "post_data")
 public class PostData {
     /**

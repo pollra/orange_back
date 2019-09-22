@@ -48,13 +48,13 @@ public class PostServiceImpl implements PostService{
      */
     public PostData createOne() throws PostServiceException {
         log.info("PostServiceImpl.createOne() start");
-        PostData postData = tool.getPostData(request);
+        PostData postData = tool.getPostData();
         log.info("PostServiceImpl.createOne() count 2");
-        PostInfo postInfo = tool.getPostInfo(request);
+        PostInfo postInfo = tool.getPostInfo();
         // 데이터 유효성 검사
         log.info("PostServiceImpl.createOne() data check");
         if(tool.isNull(TargetPost.DATA, postData)){
-            throw new PostDataNotFoundException("입력되지 않은 데이터가 존재합니다.");
+            throw new PostDataNotFoundException("입력되지 않은 데이터가 존재합니다: "+postData.toString());
         }
         log.info("createOnePostData start");
         // PostData 를 생성 후 DB에 입력
@@ -123,7 +123,8 @@ public class PostServiceImpl implements PostService{
         postInfo.setNum(postNum);
         postInfo.setDate(new Date(System.currentTimeMillis()).toString());
         postInfo.setUri(postNum+"");
-        postInfo.setOwner(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
+        log.warn("user: {}", request.getAttribute("jwt-user"));
+        postInfo.setOwner(request.getAttribute("jwt-user").toString());
 
         // 작성자의 글을 카운트하고 Uri 에 입력
         ownerCount = infoRepository.countByOwner(postInfo.getOwner());

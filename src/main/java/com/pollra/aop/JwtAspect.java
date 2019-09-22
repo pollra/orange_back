@@ -62,17 +62,17 @@ public class JwtAspect {
         try {
             jwtService.credential();
         }catch (ExpiredJwtException e){
-            request.setAttribute("error",e.getMessage());
+            request.setAttribute("error","[인가 에러]"+e.getMessage());
         }catch (UnsupportedJwtException e){
-            request.setAttribute("error",e.getMessage());
+            request.setAttribute("error","[인가 에러]"+e.getMessage());
         }catch (MalformedJwtException e){
-            request.setAttribute("error",e.getMessage());
+            request.setAttribute("error","[인가 에러]"+e.getMessage());
         }catch (SignatureException e){
-            request.setAttribute("error",e.getMessage());
+            request.setAttribute("error","[인가 에러]"+e.getMessage());
         }catch (IllegalArgumentException e){
-            request.setAttribute("error",e.getMessage());
+            request.setAttribute("error","[인가 에러]"+e.getMessage());
         }catch (JwtServiceException e){
-            request.setAttribute("error",e.getMessage());
+            request.setAttribute("error","[인가 에러]"+e.getMessage());
         }catch (Throwable e){
             request.setAttribute("error",e.getMessage());
         }
@@ -89,6 +89,7 @@ public class JwtAspect {
         try {
             jwtService.certification();
         }catch (Throwable e){
+            log.info("인증 과정 에러발생");
             request.setAttribute("error",e.getMessage());
         }
     }

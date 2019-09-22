@@ -17,8 +17,7 @@ import org.springframework.util.StringUtils;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -48,14 +47,16 @@ public class JwtService {
      * @throws JwtServiceException
      */
     public void certification() throws Throwable{
-        System.out.println("certification start");
+        log.info("certification start");
         var token = request.getHeader(JwtConstants.TOKEN_HEADER);
         try{
             // 저장한 토큰 데이터가 null 인가?
             JwtParsing jwtParsing = new JwtParsing(token).invoke();
             String username = jwtParsing.getUsername();
-            List<?> authorities = jwtParsing.getAuthorities();
+            String authorities = jwtParsing.getAuthorities();
 
+            log.warn("certification username: {}",username);
+            log.warn("certification jwtParsing.getUsername: {}",jwtParsing.getUsername());
 //            log.warn("입력된 유저 권한: {}",parsedToken.getBody().get("rol"));
 
             // 유저의 권한이 맞는지 확인
@@ -66,7 +67,7 @@ public class JwtService {
                 log.warn("[!] Jwt 존재하지 않는 유저 엑세스 감지. [user: {}]", username);
                 throw new JwtDataAccessException("토큰에서 넘어온 유저 데이터가 DB에 존재하지 않습니다.");
             }
-            if (!(("[" + userAccount.getAuth() + "]").equals(authorities))) {
+            if (!(userAccount.getAuth().equals(authorities))) {
                 log.warn("[!] Jwt 유저 권한 변조 감지. [user: {}, auth: {}, 변조하려는 권한: {}]", username, userAccount.getAuth(), authorities);
                 throw new JwtTamperingDetectionException("토큰데이터 변조가 감지되었습니다.");
             }
@@ -82,6 +83,8 @@ public class JwtService {
             log.warn("유효하지 않은 서명으로 구문 분석 JWT 요청 : {} failed : {}", token, exception.getMessage());
         }catch (IllegalArgumentException exception){
             log.warn("비어 있거나 널인 JWT 구문 분석 요청 : {} failed : {}", token, exception.getMessage());
+        }catch (Throwable e){
+            log.warn("인증과정에서 예상하지 못한 에러가 발생했습니다: {}", e.getMessage());
         }
     }
 
@@ -165,7 +168,7 @@ public class JwtService {
     private class JwtParsing {
         private String token;
         private String username;
-        private List<?> authorities;
+        private String authorities;
 
         public JwtParsing(String token) {
             this.token = token;
@@ -175,9 +178,17 @@ public class JwtService {
             return username;
         }
 
-        public List<?> getAuthorities() {
+        public String getAuthorities() {
             return authorities;
         }
+
+        /*private void setAuthorities(Map<String, String> map){
+            List<String> result = new ArrayList<>();
+            for(Map.Entry entry : map.entrySet()){
+                result.add(entry.getValue()+"");
+            }
+            this.authorities = result;
+        }*/
 
         public JwtParsing invoke() {
             if (StringUtils.isEmpty(token) && !token.startsWith(JwtConstants.TOKEN_PREFIX)) {
@@ -193,7 +204,11 @@ public class JwtService {
                     .getBody()
                     .getSubject();
             log.info("username: " + username);
-            authorities = ((List<?>) parsedToken.getBody().get("rol"));
+            log.warn("권한: {}",parsedToken.getBody());
+            log.warn("권한.get(): {}",parsedToken.getBody().get("rol"));
+            this.authorities = parsedToken.getBody().get("rol")+"";
+//            this.setAuthorities((Map<String, String>) parsedToken.getBody().get("rol"));
+//            authorities = ((List<String>) parsedToken.getBody().get("rol"));
             return this;
         }
     }
