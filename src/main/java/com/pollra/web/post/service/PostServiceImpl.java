@@ -1,25 +1,27 @@
 package com.pollra.web.post.service;
 
-import com.pollra.web.post.domain.PostData;
-import com.pollra.web.post.domain.PostInfo;
-import com.pollra.web.post.domain.PostList;
-import com.pollra.web.post.domain.TargetPost;
+import com.pollra.web.post.domain.*;
 import com.pollra.web.post.exception.PostServiceException;
 import com.pollra.web.post.exception.other.IncorrectPostDataException;
 import com.pollra.web.post.exception.data.PostDataInsertException;
-import com.pollra.web.post.exception.data.PostDataNotFoundException;
+import com.pollra.web.post.exception.data.PostNotFoundException;
 import com.pollra.web.post.exception.info.PostInfoInsertException;
 import com.pollra.web.post.exception.list.PostListInsertException;
+import com.pollra.web.post.exception.other.IncorrentInsertDataException;
+import com.pollra.web.post.exception.other.SelectionNotFoundException;
 import com.pollra.web.post.tool.PostDataPretreatmentTool;
+import com.pollra.web.post.tool.PostListPretreatmentTool;
 import com.pollra.web.repository.PostDataRepository;
 import com.pollra.web.repository.PostInfoRepository;
 import com.pollra.web.repository.PostListRepository;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -33,13 +35,15 @@ public class PostServiceImpl implements PostService{
     private PostInfoRepository infoRepository;
     private PostListRepository listRepository;
     private PostDataPretreatmentTool tool;
+    private PostListPretreatmentTool listTool;
     private HttpServletRequest request;
 
-    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository, PostDataPretreatmentTool dataTool, HttpServletRequest request) {
+    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository, PostDataPretreatmentTool tool, PostListPretreatmentTool listTool, HttpServletRequest request) {
         this.dataRepository = dataRepository;
         this.infoRepository = infoRepository;
         this.listRepository = listRepository;
-        this.tool = dataTool;
+        this.tool = tool;
+        this.listTool = listTool;
         this.request = request;
     }
 
@@ -49,12 +53,12 @@ public class PostServiceImpl implements PostService{
     public PostData createOne() throws PostServiceException {
         log.info("PostServiceImpl.createOne() start");
         PostData postData = tool.getPostData();
-        log.info("PostServiceImpl.createOne() count 2");
+//        log.info("PostServiceImpl.createOne() count 2");
         PostInfo postInfo = tool.getPostInfo();
         // 데이터 유효성 검사
         log.info("PostServiceImpl.createOne() data check");
         if(tool.isNull(TargetPost.DATA, postData)){
-            throw new PostDataNotFoundException("입력되지 않은 데이터가 존재합니다: "+postData.toString());
+            throw new PostNotFoundException("입력되지 않은 데이터가 존재합니다: "+postData.toString());
         }
         log.info("createOnePostData start");
         // PostData 를 생성 후 DB에 입력
@@ -107,21 +111,21 @@ public class PostServiceImpl implements PostService{
      * @param postInfo imgPath   글 이미지 경로
      * @param postInfo owner     글 작성자
      * @return
-     * @throws PostDataNotFoundException
+     * @throws PostNotFoundException
      * @throws PostInfoInsertException
      */
     private PostInfo createOnePostInfo(Long postNum,PostInfo postInfo)
-            throws PostDataNotFoundException,PostInfoInsertException{
+            throws PostNotFoundException,PostInfoInsertException{
         int ownerCount = 0;
         // 해당 포스팅이 존재하는지 확인
         if(0 >= dataRepository.countByNum(postNum)){
             // 포스트 데이터를 확인할 수 없음.
-            throw new PostDataNotFoundException("PostData is not found");
+            throw new PostNotFoundException("PostData is not found");
         }
 
         // 기본 postInfo 작성
         postInfo.setNum(postNum);
-        postInfo.setDate(new Date(System.currentTimeMillis()).toString());
+        postInfo.setDate(new SimpleDateFormat("yy.MM.dd").format(new Date(System.currentTimeMillis())));
         postInfo.setUri(postNum+"");
         log.warn("user: {}", request.getAttribute("jwt-user"));
         postInfo.setOwner(request.getAttribute("jwt-user").toString());
@@ -147,6 +151,7 @@ public class PostServiceImpl implements PostService{
         return resultPostInfo;
     }
 
+
     /**
      * createOnePostList
      * 데이터를 받고 PostList 작성, 저장
@@ -165,6 +170,7 @@ public class PostServiceImpl implements PostService{
         postList.setDate(postInfo.getDate());
         postList.setUri(postInfo.getUri());
         postList.setOwner(postInfo.getOwner());
+        postList.setCategory(postInfo.getCategory());
 
         // 데이터를 DB에 입력
         PostList dbInsertResult = listRepository.save(postList);
@@ -190,13 +196,55 @@ public class PostServiceImpl implements PostService{
     /**
      * read
      */
+    /**
+     * 페이지 넘버를 받고 게시글 하나를 리턴한다.
+     * @param targetPost
+     * @return
+     */
     public Object readOne(TargetPost targetPost){
+
         return null;
     }
 
-    public List<Object> readList(TargetPost targetPost){
-        return null;
+    /**
+     * 카테고리 하나를 받고 그 카테고리에 속한 글목록을 리턴한다.
+     * @return
+     */
+    public List<PostList> readList(PL_Range range,String value) {
+        // 카테고리가 입력됨 하나의 카테고리 출력
+        switch (range){
+            case CATEGORY:
+                return readListOfCategory(value);
+            case OWNER:
+                return readListOfOwner(value);
+            default:
+                log.info("존재하지 않는 선택지 입니다");
+                throw new SelectionNotFoundException("존재하지 않는 선택지 입니다");
+        }
     }
+    private List<PostList> readListOfCategory(String category) {
+        // 입력된 카테고리가 없으면 모든 카테고리 출력
+        if(StringUtils.isEmpty(category)){
+            throw new IncorrentInsertDataException("카테고리 데이터를 확인할 수 없습니다.");
+        }
+        // DB 에서 조회
+        List<PostList> resultList = listRepository.findAllByCategory(category);
+        if(listTool.isNull_array(resultList)) {
+            throw new IncorrentInsertDataException("카테고리 데이터를 찾을 수 없습니다: " + category);
+        }
+        // 데이터 리턴
+        return resultList;
+    }
+    private List<PostList> readListOfOwner(String owner) {
+        // DB 에서 조회
+        List<PostList> resultList = listRepository.findAllByOwner(owner);
+        if(listTool.isNull_array(resultList)) {
+            throw new IncorrentInsertDataException("카테고리 데이터를 찾을 수 없습니다: " + owner);
+        }
+        // 데이터 리턴
+        return resultList;
+    }
+
     /**
      * other method
      */
@@ -219,4 +267,5 @@ public class PostServiceImpl implements PostService{
 
         return text;
     }
+
 }

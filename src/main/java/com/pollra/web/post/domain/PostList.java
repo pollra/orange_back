@@ -27,6 +27,9 @@ public class PostList {
     @Column(nullable = false)
     private String date;
     private String img_path;
+
+    @Column(nullable = true)// 데이터 추가 후 필수입력으로 변경
+    private String category;
 }
 /**
  * 해야할 것

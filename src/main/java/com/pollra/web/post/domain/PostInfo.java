@@ -39,4 +39,9 @@ public class PostInfo {
      * 대표 이미지 웹 경로
      */
     private String imgPath;
+
+    /**
+     * 속해있는 카테고리
+     */
+    private String category;
 }

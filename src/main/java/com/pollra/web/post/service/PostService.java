@@ -1,6 +1,8 @@
 package com.pollra.web.post.service;
 
+import com.pollra.web.post.domain.PL_Range;
 import com.pollra.web.post.domain.PostData;
+import com.pollra.web.post.domain.PostList;
 import com.pollra.web.post.domain.TargetPost;
 import org.springframework.stereotype.Service;
 
@@ -16,5 +18,5 @@ public interface PostService {
     void updateOne();
 
     Object readOne(TargetPost targetPost);
-    List<Object> readList(TargetPost targetPost);
+    List<PostList> readList(PL_Range range, String category);
 }

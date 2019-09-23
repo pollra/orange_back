@@ -22,6 +22,7 @@ public class PostDataPretreatmentTool {
 
     // post info
     private final String INFO_IMG_PATH = "imgPath";
+    private final String INFO_CATEGORY = "category";
 
     public PostData getPostData() {
         PostData postData = new PostData();
@@ -33,6 +34,7 @@ public class PostDataPretreatmentTool {
     public PostInfo getPostInfo() {
         PostInfo postInfo = new PostInfo();
         postInfo.setImgPath(request.getParameter(INFO_IMG_PATH));
+        postInfo.setCategory(request.getParameter(INFO_CATEGORY).toLowerCase());
         return postInfo;
     }
 
