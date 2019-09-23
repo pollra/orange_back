@@ -26,11 +26,11 @@ spring:
     password: tmdrms159
 
 # 3. JWT
-jwt:
-  loginUri : '/api/authenticate'
-  secret: 'n2r5u8x/A%D*G-KaPdSgVkYp3s6v9y$B&E(H+MbQeThWmZq4t7w!z%C*F-J@NcRf'
-  header: 'Authorization'
-  prefix: 'Bearer '
-  type: 'JWT'
-  issuer: 'secure-api'
-  audience: 'secure-app'
+#jwt:
+#  loginUri : '/api/authenticate'
+#  secret: 'n2r5u8x/A%D*G-KaPdSgVkYp3s6v9y$B&E(H+MbQeThWmZq4t7w!z%C*F-J@NcRf'
+#  header: 'Authorization'
+#  prefix: 'Bearer '
+#  type: 'JWT'
+#  issuer: 'secure-api'
+#  audience: 'secure-app'

@@ -13,16 +13,21 @@ import com.pollra.web.user.exception.*;
 import com.pollra.web.user.service.UserService;
 import com.pollra.web.user.tool.data.UserDataPretreatmentTool;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorContextImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.*;
 import java.util.Map;
+import java.util.Set;
 
 @Controller
 @CrossOrigin
@@ -89,6 +94,9 @@ public class UserRestController {
      */
     @PostMapping
     public ResponseEntity<?> insertOneUser(){
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        Validator validator = factory.getValidator();
+        String errorMessage = "";
         // 회원가입 로직
         UserAccount insertAccount = tool.getUserAccount(Range.ALL);
         int countState = 0;
@@ -101,6 +109,10 @@ public class UserRestController {
             // 데이터가 이미 존재하는지 검사
             userService.countOne(AccessClassification.ID);
 
+            Set<ConstraintViolation<UserAccount>> violations = validator.validate(insertAccount);
+            for(ConstraintViolation<UserAccount> violation : violations){
+                errorMessage = violation.getMessage();
+            }
             // 데이터 하나를 저장
             userService.createOne();
 
@@ -111,6 +123,12 @@ public class UserRestController {
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 확인할 수 없습니다."), HttpStatus.BAD_REQUEST);
         }catch (UserServiceException e){
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }catch (TransactionSystemException e){
+            log.error(e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(errorMessage), HttpStatus.BAD_REQUEST);
+        }catch (Throwable e){
+            log.error(e.toString());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("알 수 없는 오류로 회원가입에 실패했습니다."), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

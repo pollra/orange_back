@@ -110,4 +110,10 @@ public class PostController {
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("알 수 없는 에러 발생"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("one/{num}")
+    public ResponseEntity<?> getOnePost(@PathVariable int num){
+
+        return null;
+    }
 }
