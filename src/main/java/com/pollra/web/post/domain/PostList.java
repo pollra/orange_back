@@ -12,7 +12,6 @@ import javax.persistence.*;
 @Table(name = "post_list")
 public class PostList {
     @Id
-    @GeneratedValue
     private Long id;
 
     @Column(nullable = false)

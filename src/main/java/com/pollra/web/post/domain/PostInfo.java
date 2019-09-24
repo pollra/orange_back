@@ -2,12 +2,14 @@ package com.pollra.web.post.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
 
 @Entity
 @Getter
 @Setter
+@ToString
 @Table(name = "post_info")
 public class PostInfo {
 
@@ -15,7 +17,6 @@ public class PostInfo {
      * 포스트(글) 번호
      */
     @Id
-    @GeneratedValue
     private Long num;
 
     /**

@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PostDataRepository extends JpaRepository<PostData, Long> {
     int countByNum(Long num);
+    PostData getByNum(Long num);
 }

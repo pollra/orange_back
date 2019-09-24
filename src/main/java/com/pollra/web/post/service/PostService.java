@@ -17,6 +17,6 @@ public interface PostService {
 
     void updateOne();
 
-    Object readOne(TargetPost targetPost);
+    Object readOne(TargetPost targetPost, int postNum);
     List<PostList> readList(PL_Range range, String category);
 }

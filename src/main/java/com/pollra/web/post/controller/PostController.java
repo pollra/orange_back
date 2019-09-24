@@ -3,11 +3,10 @@ package com.pollra.web.post.controller;
 import com.pollra.aop.jwt.anno.TokenCertification;
 import com.pollra.aop.jwt.anno.TokenCredential;
 import com.pollra.response.ApiDataDetail;
-import com.pollra.web.post.domain.PL_Range;
-import com.pollra.web.post.domain.PostData;
-import com.pollra.web.post.domain.PostList;
-import com.pollra.web.post.domain.PostListVo;
+import com.pollra.web.post.domain.*;
+import com.pollra.web.post.exception.data.PostNotFoundException;
 import com.pollra.web.post.exception.other.IncorrentInsertDataException;
+import com.pollra.web.post.exception.other.SelectionNotFoundException;
 import com.pollra.web.post.service.PostServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -52,11 +51,13 @@ public class PostController {
         }
         log.warn("로그인된 유저 정보: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
         PostData resultPostData = null;
+        PostInfo responsePostInfo = null;
         try {
             log.info("one post insert logic start");
             resultPostData = postService.createOne();
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("ok",resultPostData.getNum()),HttpStatus.OK);
-        }catch (Exception e){
+            responsePostInfo = (PostInfo) postService.readOne(TargetPost.INFO, resultPostData.getNum().intValue());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("ok",responsePostInfo.getUri()),HttpStatus.OK);
+        }catch (Throwable e){
             log.info(e.getMessage());
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -111,9 +112,32 @@ public class PostController {
         }
     }
 
+    /**
+     * 포스팅 하나를 보냄
+     * @param num   포스팅 번호
+     * @return
+     */
     @GetMapping("one/{num}")
     public ResponseEntity<?> getOnePost(@PathVariable int num){
-
-        return null;
+        log.info("[/api/posts/one/{}] start",num);
+        try{
+            // url 을 기준으로 검색
+            // 포스트 번호를 가져오고
+            // 그 포스트번호대로 조회
+            PostInfo postInfo = (PostInfo) postService.readOne(TargetPost.LIST, num);
+            log.info("postInfo: "+postInfo.toString());
+            PostData postData = (PostData) postService.readOne(TargetPost.DATA, Integer.parseInt(postInfo.getNum()+""));
+            log.info("postData: "+postData.toString());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK", new PostDataVo(postData, postInfo)), HttpStatus.OK);
+        }catch (PostNotFoundException e){
+            log.error("[!]PostNotFound: "+e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()),HttpStatus.NOT_FOUND);
+        }catch (SelectionNotFoundException e){
+            log.error("[!]SelectionNotFound: "+e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("서버 내부 에러"),HttpStatus.INTERNAL_SERVER_ERROR);
+        }catch (Throwable e){
+            log.error("[!]Throwable: "+e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 확인할 수 없습니다."),HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

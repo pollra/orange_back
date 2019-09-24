@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -133,7 +134,7 @@ public class PostServiceImpl implements PostService{
         // 작성자의 글을 카운트하고 Uri 에 입력
         ownerCount = infoRepository.countByOwner(postInfo.getOwner());
         if(ownerCount > 0){
-            postInfo.setUri((ownerCount + 1)+"");
+            postInfo.setUri(postNum.intValue()+"");
         }
 
         // 만든 postInfo 를 DB 에 입력
@@ -165,6 +166,7 @@ public class PostServiceImpl implements PostService{
 
         // DB에 입력할 데이터 생성
         PostList postList = new PostList();
+        postList.setId(postData.getNum());
         postList.setTitle(postData.getTitle());
         postList.setImg_path(postInfo.getImgPath());
         postList.setDate(postInfo.getDate());
@@ -201,9 +203,68 @@ public class PostServiceImpl implements PostService{
      * @param targetPost
      * @return
      */
-    public Object readOne(TargetPost targetPost){
+    public Object readOne(TargetPost targetPost, int postNum){
+        log.info("PostService.readOne({},{})",targetPost,postNum);
+        switch (targetPost){
+            case DATA:
+                return readOne_postData(postNum);
+            // 포스트 리다이렉트를 리턴하려할 때
+            case INFO:
+                return readOne_postInfo(InfoRange.NUM, postNum);
+            // 포스트를 보려고할 때
+            case LIST:
+                return readOne_postInfo(InfoRange.URI, postNum);
+            default:
+                throw new SelectionNotFoundException("존재하지 않는 선택입니다.");
+        }
+    }
 
-        return null;
+    private PostInfo readOne_postInfo(InfoRange range, int postNum) {
+        log.info("readOne_postInfo({}/{})",range , postNum);
+        switch (range) {
+            case URI:
+                if (postNum <= 0) {
+                    throw new PostNotFoundException("존재하지 않는 포스트 번호입니다.");
+                }
+                List<PostInfo> postInfo = infoRepository.getAllByUri(postNum + "");
+                if (postInfo.size() <= 0) {
+                    throw new PostNotFoundException("포스팅이 존재하지 않습니다.");
+                }
+                if (tool.isNull(TargetPost.INFO, postInfo.get(0))) {
+                    throw new PostNotFoundException("존재하지 않는 포스트입니다.");
+                }
+                return postInfo.get(0);
+            case NUM:
+                log.info("readOne_postInfo({})", postNum);
+                if(postNum <= 0){
+                    throw new PostNotFoundException("존재하지 않는 포스트 번호입니다.");
+                }
+                PostInfo postInfo2 = infoRepository.getByNum(Long.parseLong(postNum+""));
+                if(postInfo2 == null || tool.isNull(TargetPost.INFO, postInfo2)){
+                    throw new PostNotFoundException("포스팅이 존재하지 않습니다.");
+                }
+                if(tool.isNull(TargetPost.INFO, postInfo2)){
+                    throw new PostNotFoundException("존재하지 않는 포스트입니다.");
+                }
+                return postInfo2;
+            default:
+                throw new SelectionNotFoundException("존재하지 않는 선택지 입니다");
+        }
+    }
+
+    private PostData readOne_postData(int postNum){
+        if(postNum <= 0){
+            throw new PostNotFoundException("존재하지 않는 포스트 번호입니다.");
+        }
+        // 포스트 정보가 존재하는지 확인
+        // 정보를 DB에서 검색해봄
+        PostData postData = dataRepository.getByNum(Long.parseLong(postNum+""));
+        if(tool.isNull(TargetPost.DATA, postData)){
+            throw new PostNotFoundException("존재하지 않는 포스트입니다.");
+        }
+        // 검색한 정보가 null 인지 확인
+        // null 이 아니라면 리턴
+        return postData;
     }
 
     /**
