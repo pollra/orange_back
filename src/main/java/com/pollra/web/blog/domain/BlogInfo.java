@@ -20,11 +20,18 @@ public class BlogInfo {
 
     /**
      * 블로그 타이틀
-     * 블로그의 좌측 상단에 이름, 탭의 title 에 표시될 사이트 이름.
+     * 블로그의 좌측 상단에 이름
      */
     @NotNull
-    @Column(unique = true)
+    @Column(unique = false)
     private String title;
+
+    /**
+     * 블로그 메타 타이틀
+     * 웹페이지 바 에 표시될 타이틀
+     */
+    @Column(name = "meta_title")
+    private String metaTitle;
 
     /**
      * 블로그 설명

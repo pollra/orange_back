@@ -1,7 +1,9 @@
 package com.pollra.web.blog.controller;
 
 import com.pollra.web.blog.domain.BlogInfo;
+import com.pollra.web.blog.domain.BlogInfoVo;
 import com.pollra.web.blog.service.BlogInfoService;
+import com.pollra.web.post.domain.PostDataVo;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,6 @@ public class BlogController {
         BlogInfo blogInfo = new BlogInfo();
 //        InfoPrint.headersPrint(request);
         blogInfo = blogService.getBlogInfoOfId("pollra");
-        return new ResponseEntity<>(blogInfo, HttpStatus.OK);
+        return new ResponseEntity<>(new BlogInfoVo(blogInfo), HttpStatus.OK);
     }
 }
