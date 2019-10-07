@@ -53,6 +53,13 @@ public class UserRestController {
     @TokenCertification
     @PutMapping("type/{range}")
     public ResponseEntity<?> updateUserAccount(@PathVariable String range) {
+        /*
+        인가 과정 에러 발생 시 처리
+        * */
+        if(!(request.getAttribute("error").toString().isEmpty())){
+            log.error(request.getAttribute("error").toString());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()),HttpStatus.BAD_REQUEST);
+        }
         System.out.println("updateUserAccount start");
         try{
             switch (range) {

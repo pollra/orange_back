@@ -2,6 +2,7 @@ package com.pollra.web.blog.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -9,6 +10,7 @@ import javax.validation.constraints.NotNull;
 @Entity
 @Getter
 @Setter
+@ToString
 @Table(name = "blog_info")
 public class BlogInfo {
     /**
