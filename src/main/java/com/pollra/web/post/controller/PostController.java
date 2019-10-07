@@ -140,4 +140,13 @@ public class PostController {
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 확인할 수 없습니다."),HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    /**
+     * Update
+     */
+    @PutMapping("one/{num}")
+    public ResponseEntity<?> updateOnePost(@PathVariable int num){
+
+        return null;
+    }
 }

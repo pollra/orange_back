@@ -35,15 +35,15 @@ public class PostServiceImpl implements PostService{
     private PostDataRepository dataRepository;
     private PostInfoRepository infoRepository;
     private PostListRepository listRepository;
-    private PostDataPretreatmentTool tool;
+    private PostDataPretreatmentTool dataTool;
     private PostListPretreatmentTool listTool;
     private HttpServletRequest request;
 
-    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository, PostDataPretreatmentTool tool, PostListPretreatmentTool listTool, HttpServletRequest request) {
+    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository, PostDataPretreatmentTool dataTool, PostListPretreatmentTool listTool, HttpServletRequest request) {
         this.dataRepository = dataRepository;
         this.infoRepository = infoRepository;
         this.listRepository = listRepository;
-        this.tool = tool;
+        this.dataTool = dataTool;
         this.listTool = listTool;
         this.request = request;
     }
@@ -53,12 +53,12 @@ public class PostServiceImpl implements PostService{
      */
     public PostData createOne() throws PostServiceException {
         log.info("PostServiceImpl.createOne() start");
-        PostData postData = tool.getPostData();
+        PostData postData = dataTool.getPostData();
 //        log.info("PostServiceImpl.createOne() count 2");
-        PostInfo postInfo = tool.getPostInfo();
+        PostInfo postInfo = dataTool.getPostInfo();
         // 데이터 유효성 검사
         log.info("PostServiceImpl.createOne() data check");
-        if(tool.isNull(TargetPost.DATA, postData)){
+        if(dataTool.isNull(TargetPost.DATA, postData)){
             throw new PostNotFoundException("입력되지 않은 데이터가 존재합니다: "+postData.toString());
         }
         log.info("createOnePostData start");
@@ -89,7 +89,7 @@ public class PostServiceImpl implements PostService{
         throws IncorrectPostDataException,
             PostDataInsertException {
         // 데이터 유효성 검사
-        if(tool.isNull(TargetPost.DATA,postData)){
+        if(dataTool.isNull(TargetPost.DATA,postData)){
             // 입력한 데이터가 올바르지 않습니다.
             throw new IncorrectPostDataException("Post data entered is not valid.");
         }
@@ -99,7 +99,7 @@ public class PostServiceImpl implements PostService{
 
         // Post 1 개 DB에 입력
         PostData resultPostData = dataRepository.save(postData);
-        if(tool.isNull(TargetPost.DATA, resultPostData)){
+        if(dataTool.isNull(TargetPost.DATA, resultPostData)){
             throw new PostDataInsertException("return value of the input is not checked.");
         }
         return resultPostData;
@@ -144,7 +144,7 @@ public class PostServiceImpl implements PostService{
         }catch (Exception e){
             throw new PostInfoInsertException("There was a problem entering the info");
         }
-        if(tool.isNull(TargetPost.INFO,resultPostInfo)){
+        if(dataTool.isNull(TargetPost.INFO,resultPostInfo)){
             // 입력 과정 오류
             throw new PostInfoInsertException("return value of the input is not checked.");
         }
@@ -176,7 +176,7 @@ public class PostServiceImpl implements PostService{
 
         // 데이터를 DB에 입력
         PostList dbInsertResult = listRepository.save(postList);
-        if(tool.isNull(TargetPost.LIST, dbInsertResult)){
+        if(dataTool.isNull(TargetPost.LIST, dbInsertResult)){
             throw new PostListInsertException("return value of the input is not checked.");
         }
         return dbInsertResult;
@@ -193,7 +193,19 @@ public class PostServiceImpl implements PostService{
      * update
      */
     public void updateOne(){
+        // 정보를 받음
+        PostData data = dataTool.getPostData();
+        /*
+        변경해야 하는 정보
 
+        postData.title
+        postData.post_content
+
+        postInfo.category
+
+        postList.title
+        postList.category
+         */
     }
     /**
      * read
@@ -230,7 +242,7 @@ public class PostServiceImpl implements PostService{
                 if (postInfo.size() <= 0) {
                     throw new PostNotFoundException("포스팅이 존재하지 않습니다.");
                 }
-                if (tool.isNull(TargetPost.INFO, postInfo.get(0))) {
+                if (dataTool.isNull(TargetPost.INFO, postInfo.get(0))) {
                     throw new PostNotFoundException("존재하지 않는 포스트입니다.");
                 }
                 return postInfo.get(0);
@@ -240,10 +252,10 @@ public class PostServiceImpl implements PostService{
                     throw new PostNotFoundException("존재하지 않는 포스트 번호입니다.");
                 }
                 PostInfo postInfo2 = infoRepository.getByNum(Long.parseLong(postNum+""));
-                if(postInfo2 == null || tool.isNull(TargetPost.INFO, postInfo2)){
+                if(postInfo2 == null || dataTool.isNull(TargetPost.INFO, postInfo2)){
                     throw new PostNotFoundException("포스팅이 존재하지 않습니다.");
                 }
-                if(tool.isNull(TargetPost.INFO, postInfo2)){
+                if(dataTool.isNull(TargetPost.INFO, postInfo2)){
                     throw new PostNotFoundException("존재하지 않는 포스트입니다.");
                 }
                 return postInfo2;
@@ -259,7 +271,7 @@ public class PostServiceImpl implements PostService{
         // 포스트 정보가 존재하는지 확인
         // 정보를 DB에서 검색해봄
         PostData postData = dataRepository.getByNum(Long.parseLong(postNum+""));
-        if(tool.isNull(TargetPost.DATA, postData)){
+        if(dataTool.isNull(TargetPost.DATA, postData)){
             throw new PostNotFoundException("존재하지 않는 포스트입니다.");
         }
         // 검색한 정보가 null 인지 확인

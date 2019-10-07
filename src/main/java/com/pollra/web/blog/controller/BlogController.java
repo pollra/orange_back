@@ -50,8 +50,9 @@ public class BlogController {
     }
 
     /**
-     * 블로그의 메타 타이틀을 수정
-     * meta_title
+     * 블로그의 정보를 수정
+     *
+     * 요청은 반드시 "title, explanation, imgPath" , "metaTitle" 단위로 분리되어야 한다
      * @return
      */
     @AdminCertification
@@ -75,6 +76,16 @@ public class BlogController {
                     valueCount++;
                 } else if (item.getValue() != null) valueCount++;
             }
+            // 사용자가 블로그의 주인이 맞는지 체크
+            /*
+            추후 업데이트 에서 사용자의 개인 블로그 설정을 누군가가 바꾸려고 할 때
+            이런식의 블로그 소유권 체크도 필요할듯.
+             */
+//            log.info("블로그 주인 체크");
+//            if(!request.getAttribute("jwt-user").toString().equals(info.getId())){
+//                log.error("블로그 소유권이 없는 사용자가 변경을 시도했습니다.");
+//                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("소유권이 인정되지 않은 사용자의 요청입니다."), HttpStatus.BAD_REQUEST);
+//            }
             log.info("데이터 확인 완료");
 
             if (valueCount < 2) {

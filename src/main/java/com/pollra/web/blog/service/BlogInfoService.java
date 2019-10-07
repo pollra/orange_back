@@ -51,6 +51,19 @@ public class BlogInfoService {
      */
 
     public void updateBlogInfo(BlogInfo blogInfo){
+        // 데이터가 DB에 존재하는지 확인
+        log.info("DB 에서 데이터 체크");
+        try{
+            BlogInfo infoCheck = blogRepository.getOne(blogInfo.getId());
+            if(!infoCheck.getId().equals(blogInfo.getId())){
+                throw new BlogDataNotFoundException("해당 데이터가 존재하지 않습니다.");
+            }
+        }catch (BlogDataNotFoundException e){
+            throw new BlogDataNotFoundException(e.getMessage());
+        }catch (Throwable e){
+            log.error("DB 데이터 체크 중 에러 발생: {} 검색하다가 그랬뜸.. ;ㅁ ;",blogInfo.getId());
+        }
+        log.info("DB 데이터 체크 완료");
         BlogUpdateRange judgment = updateJudgment(blogInfo);
         if(judgment == null){
             log.error("judgment 가 null 을 리턴했습니다.");

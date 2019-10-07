@@ -66,5 +66,4 @@ public interface BlogRepository extends JpaRepository<BlogInfo, String> {
     BlogInfo getOne(String id);
     Optional<BlogInfo> findById(String id);
 
-
 }
