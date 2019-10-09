@@ -1,6 +1,7 @@
 package com.pollra.web.post.service;
 
 import com.pollra.web.post.domain.*;
+import com.pollra.web.post.domain.en.PI_getRange;
 import com.pollra.web.post.exception.PostServiceException;
 import com.pollra.web.post.exception.other.IncorrectPostDataException;
 import com.pollra.web.post.exception.data.PostDataInsertException;
@@ -10,6 +11,7 @@ import com.pollra.web.post.exception.list.PostListInsertException;
 import com.pollra.web.post.exception.other.IncorrentInsertDataException;
 import com.pollra.web.post.exception.other.SelectionNotFoundException;
 import com.pollra.web.post.tool.PostDataPretreatmentTool;
+import com.pollra.web.post.tool.PostInfoTool;
 import com.pollra.web.post.tool.PostListPretreatmentTool;
 import com.pollra.web.repository.PostDataRepository;
 import com.pollra.web.repository.PostInfoRepository;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -37,14 +40,16 @@ public class PostServiceImpl implements PostService{
     private PostListRepository listRepository;
     private PostDataPretreatmentTool dataTool;
     private PostListPretreatmentTool listTool;
+    private PostInfoTool infoTool;
     private HttpServletRequest request;
 
-    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository, PostDataPretreatmentTool dataTool, PostListPretreatmentTool listTool, HttpServletRequest request) {
+    public PostServiceImpl(PostDataRepository dataRepository, PostInfoRepository infoRepository, PostListRepository listRepository, PostDataPretreatmentTool dataTool, PostListPretreatmentTool listTool, PostInfoTool infoTool, HttpServletRequest request) {
         this.dataRepository = dataRepository;
         this.infoRepository = infoRepository;
         this.listRepository = listRepository;
         this.dataTool = dataTool;
         this.listTool = listTool;
+        this.infoTool = infoTool;
         this.request = request;
     }
 
@@ -192,9 +197,12 @@ public class PostServiceImpl implements PostService{
     /**
      * update
      */
+    @Transactional
     public void updateOne(){
         // 정보를 받음
         PostData data = dataTool.getPostData();
+        PostInfo info = infoTool.getPostInfo(PI_getRange.CATEGORY);
+
         /*
         변경해야 하는 정보
 
@@ -206,6 +214,9 @@ public class PostServiceImpl implements PostService{
         postList.title
         postList.category
          */
+        dataRepository.updatePostContentAndTitleByNum(data.getTitle(), data.getPostContent(), data.getNum());
+        infoRepository.updateCategoryByNum(info.getCategory(), data.getNum());
+        listRepository.updateTitleAndCategoryByNum(data.getTitle(), info.getCategory(), data.getNum());
     }
     /**
      * read
