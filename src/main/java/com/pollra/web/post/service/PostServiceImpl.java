@@ -2,14 +2,14 @@ package com.pollra.web.post.service;
 
 import com.pollra.web.post.domain.*;
 import com.pollra.web.post.domain.en.PI_getRange;
+import com.pollra.web.post.domain.en.Pi_NullRange;
+import com.pollra.web.post.domain.en.Pl_NullRange;
 import com.pollra.web.post.exception.PostServiceException;
-import com.pollra.web.post.exception.other.IncorrectPostDataException;
+import com.pollra.web.post.exception.other.*;
 import com.pollra.web.post.exception.data.PostDataInsertException;
 import com.pollra.web.post.exception.data.PostNotFoundException;
 import com.pollra.web.post.exception.info.PostInfoInsertException;
 import com.pollra.web.post.exception.list.PostListInsertException;
-import com.pollra.web.post.exception.other.IncorrentInsertDataException;
-import com.pollra.web.post.exception.other.SelectionNotFoundException;
 import com.pollra.web.post.tool.PostDataPretreatmentTool;
 import com.pollra.web.post.tool.PostInfoTool;
 import com.pollra.web.post.tool.PostListPretreatmentTool;
@@ -189,19 +189,55 @@ public class PostServiceImpl implements PostService{
     /**
      * delete
      */
+    @Transactional
+    public void deleteOne(String num){
+        /**
+         * 넘버를 받음
+         */
+        // 숫자 받음
+        // 데이터가 null 인지 확인
+        Long deleteTarget = 0L;
+        try{
+            deleteTarget = Long.parseLong(num);
+        }catch (NumberFormatException e){
+            throw new PostNumberFormatException("넘어온 데이터가 숫자가 아닙니다.");
+        }
+        // 데이터가 잘 변환되었는지 확인
+        if(deleteTarget == 0L){
+            throw new PostNotFoundException("존재할 수 없는 포스팅 번호입니다.");
+        }
 
-    public void deleteOne(){
-
+        // 데이터가 존재하는지 확인
+        int dataCount = dataRepository.countByNum(deleteTarget);
+        if(dataCount <= 0){
+            throw new PostNotFoundException("해당 데이터가 존재하지 않습니다.");
+        }
+        // 데이터 삭제
+        try {
+            dataRepository.deleteById(deleteTarget);
+            infoRepository.deleteById(deleteTarget);
+            listRepository.deleteById(deleteTarget);
+        }catch (Throwable e){
+            log.error("데이터 삭제 도중 에러 발생"+e.getMessage());
+            throw new IncorrectPostDataException("데이터 삭제에 실패했습니다.");
+        }
     }
 
     /**
      * update
      */
     @Transactional
-    public void updateOne(){
-        // 정보를 받음
-        PostData data = dataTool.getPostData();
-        PostInfo info = infoTool.getPostInfo(PI_getRange.CATEGORY);
+    public void updateOne() throws PostNullPointerException{
+        try {
+            // 정보를 받음
+            /**
+             * 받는 정보
+             * PostData ( num, title, content )
+             * PostInfo ( category )
+             */
+            PostData data = dataTool.getPostData();
+            PostInfo info = infoTool.getPostInfo(PI_getRange.CATEGORY);
+            log.info("info({})",info.toString());
 
         /*
         변경해야 하는 정보
@@ -214,9 +250,36 @@ public class PostServiceImpl implements PostService{
         postList.title
         postList.category
          */
-        dataRepository.updatePostContentAndTitleByNum(data.getTitle(), data.getPostContent(), data.getNum());
-        infoRepository.updateCategoryByNum(info.getCategory(), data.getNum());
-        listRepository.updateTitleAndCategoryByNum(data.getTitle(), info.getCategory(), data.getNum());
+
+            // 데이터 null 체크
+            // postData 체크
+            if (dataTool.isNull(TargetPost.DATA, data)) {
+                throw new PostNullPointerException("입력 데이터가 올바르지 않습니다.");
+            }
+            // postInfo 체크
+            if (infoTool.isNull(Pi_NullRange.UPDATE, info)) {
+                throw new PostNullPointerException("입력된 글 정보 데이터가 올바르지 않습니다.");
+            }
+            // postList 체크
+            PostList list = new PostList();
+            list.setTitle(data.getTitle());
+            list.setCategory(info.getCategory());
+            if (listTool.isNull(Pl_NullRange.UPDATE, list)) {
+                throw new PostNullPointerException("데이터 조합에 실패했습니다.");
+            }
+
+            // 해당 데이터가 DB에 존재하는 데이터인지 확인
+            if (dataRepository.countByNum(data.getNum()) <= 0) {
+                throw new PostNotFoundException("존재하지 않는 포스트의 변경 요청입니다.");
+            }
+
+            dataRepository.updatePostContentAndTitleByNum(data.getTitle(), data.getPostContent(), data.getNum());
+            infoRepository.updateCategoryByNum(info.getCategory(), data.getNum());
+            listRepository.updateTitleAndCategoryByNum(data.getTitle(), info.getCategory(), data.getNum());
+        }catch (Throwable e){
+            log.error(e.getMessage());
+            throw new PostServiceException("예상치 못한 에러");
+        }
     }
     /**
      * read

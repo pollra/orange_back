@@ -5,6 +5,7 @@ import com.pollra.web.post.domain.PostInfo;
 import com.pollra.web.post.domain.PostList;
 import com.pollra.web.post.domain.TargetPost;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -17,6 +18,7 @@ public class PostDataPretreatmentTool {
     }
 
     // post data
+    private final String DATA_NUM = "num";
     private final String DATA_TITLE = "title";
     private final String DATA_CONTENT = "content";
 
@@ -26,6 +28,7 @@ public class PostDataPretreatmentTool {
 
     public PostData getPostData() {
         PostData postData = new PostData();
+        postData.setNum(Long.parseLong(request.getParameter(DATA_NUM)));
         postData.setTitle(request.getParameter(DATA_TITLE));
         postData.setPostContent(request.getParameter(DATA_CONTENT));
         return postData;
@@ -58,8 +61,10 @@ public class PostDataPretreatmentTool {
     }
 
     private boolean isNull_postData(PostData postData){
+        if(postData == null) return true;
+        if(postData.getNum() == null || postData.getNum() <= 0) return true;
         if(postData.getTitle() == "") return true;
-        if (postData.getPostContent()=="") return true;
+        if(postData.getPostContent()=="") return true;
         return false;
     }
     private boolean isNull_postInfo(PostInfo postInfo){

@@ -13,7 +13,7 @@ import java.util.List;
 public interface PostService {
     PostData createOne();
 
-    void deleteOne();
+    void deleteOne(String num);
 
     void updateOne();
 

@@ -4,9 +4,9 @@ import com.pollra.aop.jwt.anno.TokenCertification;
 import com.pollra.aop.jwt.anno.TokenCredential;
 import com.pollra.response.ApiDataDetail;
 import com.pollra.web.post.domain.*;
+import com.pollra.web.post.exception.PostServiceException;
 import com.pollra.web.post.exception.data.PostNotFoundException;
-import com.pollra.web.post.exception.other.IncorrentInsertDataException;
-import com.pollra.web.post.exception.other.SelectionNotFoundException;
+import com.pollra.web.post.exception.other.*;
 import com.pollra.web.post.service.PostServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -144,9 +144,59 @@ public class PostController {
     /**
      * Update
      */
-    @PutMapping("one/{num}")
-    public ResponseEntity<?> updateOnePost(@PathVariable int num){
+    @PutMapping("one")
+    @TokenCertification
+    public ResponseEntity<?> updateOnePost(){
+        try {
+            String certificationText = prevCertification();
+            if(!certificationText.equals("")){
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(certificationText), HttpStatus.FORBIDDEN);
+            }
+            postService.updateOne();
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK"), HttpStatus.OK);
+        }catch (PostNullPointerException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }catch (PostServiceException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("예상치 못한 서버 에러"), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-        return null;
+    /**
+     * Delete
+     * 블로그 글 삭제 ( JWT, 글 번호 )
+     */
+    @DeleteMapping("one/{num}")
+    @TokenCertification
+    public ResponseEntity<?> deleteOnePost(@PathVariable String num){
+        // 데이터 받아서 처리
+        try{
+            String certificationText = prevCertification();
+            if(!certificationText.equals("")){
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(certificationText), HttpStatus.FORBIDDEN);
+            }
+            postService.deleteOne(num);
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK"), HttpStatus.OK);
+        }catch (PostNumberFormatException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }catch (PostNotFoundException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }catch (IncorrectPostDataException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }catch (Throwable e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("예상치 못한 오류"), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private String prevCertification(){
+        if(!StringUtils.isEmpty(request.getAttribute("error"))){
+            log.warn("토큰 정보를 확인할 수 없습니다: {}",request.getAttribute("error").toString());
+            return "토큰 정보를 확인할 수 없습니다: "+request.getAttribute("error").toString();
+        }
+        if(StringUtils.isEmpty(request.getAttribute("jwt-user"))&& StringUtils.isEmpty(request.getAttribute("jwt-auth"))){
+            log.warn("로그인된 유저의 정보를 읽는데 실패했습니다: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
+            return "로그인된 유저의 정보를 읽는데 실패했습니다: jwt-user["+request.getAttribute("jwt-user")+"], jwt-auth["+request.getAttribute("jwt-auth")+"]";
+        }
+        log.warn("로그인된 유저 정보: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
+        return "";
     }
 }

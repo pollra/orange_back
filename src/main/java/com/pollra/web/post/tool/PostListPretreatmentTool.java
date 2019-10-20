@@ -2,6 +2,7 @@ package com.pollra.web.post.tool;
 
 import com.pollra.web.post.domain.PL_Range;
 import com.pollra.web.post.domain.PostList;
+import com.pollra.web.post.domain.en.Pl_NullRange;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -38,7 +39,14 @@ public class PostListPretreatmentTool {
      * 대상 객체가 null 일 경우 true
      * @return
      */
-    public boolean isNull(PostList postList){
+    public boolean isNull(Pl_NullRange range, PostList postList){
+        switch (range){
+            case ALL:
+                return _isNull_all(postList);
+            case UPDATE:
+                return _isNull_update(postList);
+        }
+
         return _isNull_all(postList);
     }
 
@@ -57,6 +65,13 @@ public class PostListPretreatmentTool {
         if(StringUtils.isEmpty(postList.getTitle())) return true;
         if(StringUtils.isEmpty(postList.getCategory())) return true;
         if(StringUtils.isEmpty(postList.getOwner())) return true;
+        return false;
+    }
+
+    private boolean _isNull_update(PostList postList){
+        if(postList == null) return true;
+        if(postList.getTitle().equals("")) return true;
+        if(postList.getCategory().equals("")) return true;
         return false;
     }
 
