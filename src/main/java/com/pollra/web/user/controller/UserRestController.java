@@ -1,11 +1,13 @@
 package com.pollra.web.user.controller;
 
+import com.pollra.aop.jwt.anno.AdminCertification;
 import com.pollra.aop.jwt.anno.TokenCertification;
 import com.pollra.aop.jwt.anno.TokenCredential;
 import com.pollra.aop.jwt.anno.TokenLogout;
 import com.pollra.aop.jwt.config.JwtConstants;
 import com.pollra.response.ApiDataDetail;
 import com.pollra.web.user.domain.UserAccount;
+import com.pollra.web.user.domain.UserAccountVO;
 import com.pollra.web.user.domain.en.AccessClassification;
 import com.pollra.web.user.domain.en.Range;
 import com.pollra.web.user.domain.en.TargetUser;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.*;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -191,6 +194,70 @@ public class UserRestController {
         }catch (Throwable e){
             log.info(e.getMessage());
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("로그아웃에 성공했으나, 알 수 없는 문제가 발생했습니다.",""), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 회원 데이터 리스트
+     * 서버에서 클라에게 데이터를 보내야함
+     */
+    @TokenCertification
+    @GetMapping("type/list")
+    public ResponseEntity<?> getDataList(){
+        // 로그인 데이터를 확인
+        try {
+            if (!(request.getAttribute("error").toString().isEmpty())) {
+                log.error(request.getAttribute("error").toString());
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
+            }
+            // 데이터 리스트를 가져옴
+            List<UserAccountVO> userList = userService.readList();
+
+            // 리턴
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("ok", userList), HttpStatus.OK);
+        }catch (UserServiceException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("예상치 못한 에러가 발생했습니다."), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 회원 차단 기능 ( JWT, 회원 아이디 )
+     */
+    @GetMapping("/locked/{target}/val/{val}")
+    @AdminCertification
+    public ResponseEntity<?> setLocked(@PathVariable String target, @PathVariable String val){
+        // 권한 확인
+        int num = 0;
+        boolean bool = false;
+        try{
+            num = Integer.parseInt(target);
+            bool = Boolean.parseBoolean(val);
+        }catch (NumberFormatException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 다시 확인해주세요"), HttpStatus.BAD_REQUEST);
+        }
+        try{
+            log.info("ㅇㅅㅇ");
+            if (request.getAttribute("error") != null && !(request.getAttribute("error").toString().isEmpty())) {
+                log.error(request.getAttribute("error").toString());
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
+            }
+            log.info("ㅇㅅㅇ");
+            log.info("넘어온 정보 num[{}] : num >= 0[{}]",num,(num >= 0));
+            log.info("넘어온 정보 bool[{}]",bool);
+            if(num < 0){
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 찾을 수 없습니다."), HttpStatus.BAD_REQUEST);
+            }
+        } catch (Throwable e){
+            log.error("데이터가 정상적이지 않습니다.");
+            log.error("error : "+e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터가 정상적이지 않습니다."),HttpStatus.BAD_REQUEST);
+        }
+        // 유저 권한 업데이트
+        try{
+            userService.locked(num, bool);
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("성공"),HttpStatus.OK);
+        } catch (UserServiceException e){
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터 변경에 실패했습니다."),HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
     UserAccount getById(String id);
@@ -21,4 +23,12 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     @Modifying
     @Query(value = "UPDATE user_account SET email = :email WHERE user_account.id = :userid",nativeQuery =true)
     void updateByEmail(@Param("email") String email, @Param("userid")String id);
+
+    @Modifying
+    @Query(value = "UPDATE user_account SET locked = :val WHERE num = :num", nativeQuery = true)
+    int updateByLocked(@Param("val") boolean val, @Param("num") int id);
+
+    @Modifying
+    @Query(value = "SELECT * FROM user_account",nativeQuery = true)
+    List<UserAccount> getAll();
 }

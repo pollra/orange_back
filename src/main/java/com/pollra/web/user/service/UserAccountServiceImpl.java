@@ -2,6 +2,7 @@ package com.pollra.web.user.service;
 
 import com.pollra.web.repository.UserAccountRepository;
 import com.pollra.web.user.domain.UserAccountDto;
+import com.pollra.web.user.domain.UserAccountVO;
 import com.pollra.web.user.domain.en.AccessClassification;
 import com.pollra.web.user.domain.en.Range;
 import com.pollra.web.user.domain.en.TargetUser;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -168,10 +170,26 @@ public class UserAccountServiceImpl implements UserService{
             }
     }
 
+    /**
+     * 회원 데이터를 가져오는 기능임
+     *
+     * 사전 보안 처리 필수
+     * @return
+     */
     @Override
-    public List<Object> readList(AccessClassification accessClassification) {
-        // 회원 리스트를 보는 기능. 현재 쓸모없음.
-        return null;
+    public List<UserAccountVO> readList() throws UserServiceException{
+        // 회원 리스트를 보는 기능 데이터
+        List<UserAccount> userAccounts;
+        List<UserAccountVO> userAccountVos = new ArrayList<>();
+        try {
+            userAccounts = accountRepository.getAll();
+            for(UserAccount ua: userAccounts){
+                userAccountVos.add(new UserAccountVO(ua));
+            }
+            return userAccountVos;
+        }catch (Throwable e){
+            throw new UserServiceException("데이터를 조회하던 도중 문제가 발생했습니다.");
+        }
     }
 
     /**
@@ -218,7 +236,6 @@ public class UserAccountServiceImpl implements UserService{
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-
         UserAccount userAccount = accountRepository.getById(username);
 //        UserDetails userDetails = new UserAccountDto(
 //                userAccount.getId(),
@@ -227,5 +244,18 @@ public class UserAccountServiceImpl implements UserService{
 //                userAccount.getAuth()
 //        );
         return null;
+    }
+
+    @Override
+    @Transactional
+    public void locked(int num, boolean val) throws UserServiceException {
+        try {
+            int result = accountRepository.updateByLocked(val, num);
+            log.info("return value[{}]", result);
+
+        } catch (Throwable e){
+            log.error(e.getMessage());
+            throw new IncorrectUserDataException("데이터를 확인할 수 없습니다.");
+        }
     }
 }

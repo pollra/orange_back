@@ -88,6 +88,7 @@ public class PostController {
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("알 수 없는 에러 발생"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     @GetMapping("list/o/{owner}")    // 주인 기준
     public ResponseEntity<?> getPostList_owner(@PathVariable String owner){
         String result = "";
