@@ -56,6 +56,10 @@ public class JwtService {
         log.info("certification start");
         var token = request.getHeader(JwtConstants.TOKEN_HEADER);
         // 저장한 토큰 데이터가 null 인가?
+        if(token == null){
+            log.error("토큰 데이터를 찾을 수 없습니다.");
+            throw new IllegalArgumentException();
+        }
         JwtParsing jwtParsing = new JwtParsing(token).invoke();
         String username = jwtParsing.getUsername();
         String authorities = jwtParsing.getAuthorities();
