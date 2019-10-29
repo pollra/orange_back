@@ -59,11 +59,13 @@ public class UserRestController {
         /*
         인가 과정 에러 발생 시 처리
         * */
-        if(!(request.getAttribute("error").toString().isEmpty())){
-            log.error(request.getAttribute("error").toString());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()),HttpStatus.BAD_REQUEST);
-        }
+        ResponseEntity<?> x = certification();
+        if (x != null) return x;
+
         System.out.println("updateUserAccount start");
+        // 로그인 되어있는 사용자의 비밀번호를 체크함
+        // 데이터를 하나 더 받아서
+
         try{
             switch (range) {
                 case "email":
@@ -164,6 +166,7 @@ public class UserRestController {
     @PostMapping("login")
     public ResponseEntity<?> login(){
         try {
+
             if (!StringUtils.isEmpty(request.getAttribute(JwtConstants.TOKEN_HEADER).toString())) {
                 log.info("로그인 성공 토큰을 발급했습니다.");
                 return new ResponseEntity<ApiDataDetail>(
@@ -206,10 +209,9 @@ public class UserRestController {
     public ResponseEntity<?> getDataList(){
         // 로그인 데이터를 확인
         try {
-            if (!(request.getAttribute("error").toString().isEmpty())) {
-                log.error(request.getAttribute("error").toString());
-                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
-            }
+            ResponseEntity<?> x = certification();
+            if (x != null) return x;
+
             // 데이터 리스트를 가져옴
             List<UserAccountVO> userList = userService.readList();
 
@@ -237,10 +239,10 @@ public class UserRestController {
         }
         try{
             log.info("ㅇㅅㅇ");
-            if (request.getAttribute("error") != null && !(request.getAttribute("error").toString().isEmpty())) {
-                log.error(request.getAttribute("error").toString());
-                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
-            }
+
+            ResponseEntity<?> x = certification();
+            if (x != null) return x;
+
             log.info("ㅇㅅㅇ");
             log.info("넘어온 정보 num[{}] : num >= 0[{}]",num,(num >= 0));
             log.info("넘어온 정보 bool[{}]",bool);
@@ -259,5 +261,24 @@ public class UserRestController {
         } catch (UserServiceException e){
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터 변경에 실패했습니다."),HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /*
+    인증
+
+    ResponseEntity<?> x = certification();
+    if (x != null) return x;
+     */
+    private ResponseEntity<?> certification() {
+        try{
+            if (request.getAttribute("error") != null && !(request.getAttribute("error").toString().isEmpty())) {
+                log.error(request.getAttribute("error").toString());
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
+            }
+        }catch (Throwable e){
+            log.error(e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("인증 과정 오류발생"), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return null;
     }
 }

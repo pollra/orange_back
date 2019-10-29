@@ -41,6 +41,7 @@ public class CategoriesService {
         return result;
     }
 
+    // 카테고리 추가
     public void create(CategoriesDAO dao) throws CategoriesNullPointerException, CategoriesInsertException{
         // 데이터 입력
         CategoriesDAO result = categoriesRepository.save(dao);

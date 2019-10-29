@@ -64,6 +64,11 @@ public class CategoriesController {
         // 데이터 체크
         try {
             // 널체크
+            if(dao.getOwner().equals("")){
+                log.error("로그인 정보를 확인할 수 없습니다[data: {}, loginUser: {}]", dao.getOwner(), request.getAttribute("jwt-user").toString());
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("로그인된 정보를 확인할 수 없습니다."), HttpStatus.BAD_REQUEST);
+            }
+
             if (tool.isNull(CateFunc.C, dao)) {
                 log.warn("입력되지 않은 데이터가 존재합니다[{}]", dao == null ? "dao == null" : dao.toString());
                 return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 다시 확인해 주세요"), HttpStatus.BAD_REQUEST);
@@ -163,7 +168,10 @@ public class CategoriesController {
         }
     }
 
-    // admin 확인
+    /* admin 확인
+    ResponseEntity<?> x = getResponseEntity();
+    if (x != null) return x;
+     */
     private ResponseEntity<?> getResponseEntity() {
         try{
             if (request.getAttribute("error") != null && !(request.getAttribute("error").toString().isEmpty())) {

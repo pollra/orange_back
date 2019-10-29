@@ -31,4 +31,5 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     @Modifying
     @Query(value = "SELECT * FROM user_account",nativeQuery = true)
     List<UserAccount> getAll();
+
 }

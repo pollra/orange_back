@@ -49,7 +49,11 @@ public class CategoriesDataTool {
     private CategoriesDAO getCategory_create(){
         CategoriesDAO result = new CategoriesDAO();
         result.setName((String) get(CA_NAME));
-        result.setOwner((String)get(CA_OWNER));
+        if(request.getAttribute("jwt-user") == null){
+            result.setOwner("");
+        }else{
+            result.setOwner(request.getAttribute("jwt-user").toString());
+        }
         return result;
     }
     private CategoriesDAO getCategory_update(){

@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,10 +30,13 @@ public class UserAccountServiceImpl implements UserService{
     private UserDataPretreatmentTool tool;
     private PasswordEncoder passwordEncoder;
 
-    public UserAccountServiceImpl(UserAccountRepository accountRepository, UserDataPretreatmentTool tool, PasswordEncoder passwordEncoder) {
+    private HttpServletRequest request;
+
+    public UserAccountServiceImpl(UserAccountRepository accountRepository, UserDataPretreatmentTool tool, PasswordEncoder passwordEncoder, HttpServletRequest request) {
         this.accountRepository = accountRepository;
         this.tool = tool;
         this.passwordEncoder = passwordEncoder;
+        this.request = request;
     }
 
     /**
@@ -86,6 +90,19 @@ public class UserAccountServiceImpl implements UserService{
                 if(tool.isNull(TargetUser.ACCOUNT_ID_EMAIL, insertUserAccount)) throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
                 break;
             case PWS:
+                // 현재 비밀번호를 체크하는 기능 ----
+                String currentPassword = request.getParameter("current_password");
+                if(currentPassword == null || currentPassword.equals("")){
+                    log.error("넘어온 현재 비밀번호를 확인할 수 없습니다.");
+                    throw new UserPasswordMatchingException("패스워드를 확인할 수 없습니다.");
+                }
+
+                UserAccount passwordCheck = accountRepository.getById(request.getAttribute("jwt-user").toString());
+                if(!passwordEncoder.matches(currentPassword, passwordCheck.getPassword())){
+                    throw new UserPasswordMatchingException("비밀번호가 맞지 않습니다.");
+                }
+                // -----
+
                 insertUserAccount = tool.getUserAccount(Range.PWS);
                 insertUserAccount.setId(tool.getUserAccount(Range.ID).getId());
                 if(tool.isNull(TargetUser.ACCOUNT_ID_PWD, insertUserAccount)) throw new IncorrectUserDataException("데이터가 정확하지 않습니다");
@@ -94,7 +111,6 @@ public class UserAccountServiceImpl implements UserService{
                 log.info("구현되지 않은 선택지입니다.");
                 throw new SelectionNotFoundException("해당 선택지는 구현되지 않은 선택지입니다.");
         }
-
 
         // 해당 메소드에서 데이터를 불러오고 데이터가 존재하는지 여부도 판단함.
         // 데이터 존재 여부만 판단하기 위해 사용.

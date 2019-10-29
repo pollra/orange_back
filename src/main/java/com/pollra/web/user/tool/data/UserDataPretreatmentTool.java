@@ -28,7 +28,7 @@ public class UserDataPretreatmentTool {
     private final String USER_PW_MATCH = "password-match";
     private final String USER_EMAIL = "email";
     private final String DEFAULT_AUTH = "USER";
-
+    //username, password, password-match
     public UserAccount getUserAccount(Range range) {
 //        InfoPrint.headersPrint(request);
         UserAccount userAccount = new UserAccount();
@@ -61,7 +61,6 @@ public class UserDataPretreatmentTool {
                         ,userAccount.getPassword()
                         ,userAccount.getPasswordMatch()
                 );
-
                 return userAccount;
             default:
                 throw new SelectionNotFoundException("선택지가 올바르지 않습니다.");

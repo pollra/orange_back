@@ -64,9 +64,8 @@ public class BlogController {
             int valueCount = 0;
             log.info("valueCount 선언 완료");
             // 에러 확인 - 익셉션 핸들러 도입하면 사라질 코드
-            if (request.getAttribute("error") != null) {
-                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
-            }
+            ResponseEntity<?> x = getResponseEntity();
+            if (x != null) return x;
             // 데이터를 받음 - 익셉션 핸들러 도입하면 사라질 코드
             BlogInfo info = dataTool.getBlogInfo();
             log.info("데이터 받기 완료");
@@ -96,18 +95,39 @@ public class BlogController {
             try {
                 log.info("blogService.updateBlogInfo({})", info.toString());
                 blogService.updateBlogInfo(info);
+                log.info("ㅇㅅㅇ?!");
                 return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터 변경 성공"), HttpStatus.OK);
             } catch (SelectionNotFoundException e) {
+                log.error("SelectionNotFoundException");
                 return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
             } catch (BlogDataNotFoundException e) {
+                log.error("BlogDataNotFoundException");
                 return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
             } catch (BlogServiceException e) {
+                log.error("BlogServiceException");
                 return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
             }
-
         }catch (Throwable e){
-            log.error("알 수 없는 에러 발생 : {}", e.getMessage());
+            log.error("알 수 없는 에러 발생 : Throwable[{}]", e.getMessage());
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("알 수 없는 에러가 발생했습니다."), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    /* admin 확인
+    ResponseEntity<?> x = getResponseEntity();
+    if (x != null) return x;
+     */
+    private ResponseEntity<?> getResponseEntity() {
+        try{
+            if (request.getAttribute("error") != null && !(request.getAttribute("error").toString().isEmpty())) {
+                log.error(request.getAttribute("error").toString());
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
+            }
+        }catch (Throwable e){
+            log.error(e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("인증 과정 오류발생"), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return null;
+    }
+
 }

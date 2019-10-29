@@ -95,7 +95,9 @@ public class BlogInfoDataTool {
     // TEI : Title Explanation ImgPath
     private BlogInfo _getBlogInfo(){
         BlogInfo info = new BlogInfo();
-        info.setId(get(BLOG_ID));
+        String id = "";
+        id = request.getAttribute("jwt-user") == null ? "" : request.getAttribute("jwt-user").toString();
+        info.setId(id);
         info.setTitle(get(BLOG_TITLE));
         info.setExplanation(get(BLOG_EX));
         info.setImgPath(get(BLOG_IMG));
