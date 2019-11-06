@@ -4,11 +4,13 @@ import com.pollra.web.post.domain.PostData;
 import com.pollra.web.post.domain.PostInfo;
 import com.pollra.web.post.domain.PostList;
 import com.pollra.web.post.domain.TargetPost;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 
+@Slf4j
 @Service
 public class PostDataPretreatmentTool {
     private HttpServletRequest request;
@@ -27,17 +29,22 @@ public class PostDataPretreatmentTool {
     private final String INFO_CATEGORY = "category";
 
     public PostData getPostData() {
+        log.info("ㅇㅅㅇ???");
         PostData postData = new PostData();
-        postData.setNum(Long.parseLong(request.getParameter(DATA_NUM)));
-        postData.setTitle(request.getParameter(DATA_TITLE));
-        postData.setPostContent(request.getParameter(DATA_CONTENT));
+        log.info("ㅇㅂㅇ...");
+//        postData.setNum(get(DATA_NUM).equals("") ? 0L:Long.parseLong(get(DATA_NUM)));
+        log.info("t'ㅅ t'ㅋ");
+        postData.setTitle(get(DATA_TITLE));
+        log.info(";ㅁ ;..!");
+        postData.setPostContent(get(DATA_CONTENT));
+        log.info("=ㅅ =;;;");
         return postData;
     }
 
     public PostInfo getPostInfo() {
         PostInfo postInfo = new PostInfo();
-        postInfo.setImgPath(request.getParameter(INFO_IMG_PATH));
-        postInfo.setCategory(request.getParameter(INFO_CATEGORY).toLowerCase());
+        postInfo.setImgPath(get(INFO_IMG_PATH));
+        postInfo.setCategory(get(INFO_CATEGORY).toLowerCase());
         return postInfo;
     }
 
@@ -62,7 +69,7 @@ public class PostDataPretreatmentTool {
 
     private boolean isNull_postData(PostData postData){
         if(postData == null) return true;
-        if(postData.getNum() == null || postData.getNum() <= 0) return true;
+//        if(postData.getNum() == null || postData.getNum() <= 0) return true;
         if(postData.getTitle() == "") return true;
         if(postData.getPostContent()=="") return true;
         return false;
@@ -81,5 +88,18 @@ public class PostDataPretreatmentTool {
         if(postList.getTitle() == "") return true;
         if(postList.getUri() == "") return true;
         return false;
+    }
+
+    private String get(String target){
+        String result = "";
+        try{
+            result = request.getParameter(target);
+            log.info("들어온 데이터: "+result);
+            if(result == null) throw new NullPointerException("데이터가 null 입니다.");
+        }catch (NullPointerException e){
+            log.error(target+"데이터를 확인할 수 없습니다.");
+            result = "";
+        }
+        return result;
     }
 }

@@ -104,7 +104,10 @@ public class CategoriesDataTool {
 
     private Object get(String target){
         String item = request.getParameter(target);
-        if(item.equals("")) log.info("{} 의 데이터가 null 입니다.", target);
+        if(item == null || item.equals("")){
+            item = "";
+            log.info("{} 의 데이터가 null 입니다.", target);
+        }
         return item;
     }
 }
