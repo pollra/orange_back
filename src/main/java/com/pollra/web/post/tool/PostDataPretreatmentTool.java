@@ -29,15 +29,9 @@ public class PostDataPretreatmentTool {
     private final String INFO_CATEGORY = "category";
 
     public PostData getPostData() {
-        log.info("ㅇㅅㅇ???");
         PostData postData = new PostData();
-        log.info("ㅇㅂㅇ...");
-//        postData.setNum(get(DATA_NUM).equals("") ? 0L:Long.parseLong(get(DATA_NUM)));
-        log.info("t'ㅅ t'ㅋ");
         postData.setTitle(get(DATA_TITLE));
-        log.info(";ㅁ ;..!");
         postData.setPostContent(get(DATA_CONTENT));
-        log.info("=ㅅ =;;;");
         return postData;
     }
 
@@ -69,7 +63,6 @@ public class PostDataPretreatmentTool {
 
     private boolean isNull_postData(PostData postData){
         if(postData == null) return true;
-//        if(postData.getNum() == null || postData.getNum() <= 0) return true;
         if(postData.getTitle() == "") return true;
         if(postData.getPostContent()=="") return true;
         return false;
@@ -95,7 +88,7 @@ public class PostDataPretreatmentTool {
         try{
             result = request.getParameter(target);
             log.info("들어온 데이터: "+result);
-            if(result == null) throw new NullPointerException("데이터가 null 입니다.");
+            if(result == null) throw new NullPointerException(target+"데이터가 null 입니다.");
         }catch (NullPointerException e){
             log.error(target+"데이터를 확인할 수 없습니다.");
             result = "";

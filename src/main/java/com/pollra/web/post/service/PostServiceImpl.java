@@ -59,7 +59,7 @@ public class PostServiceImpl implements PostService{
     public PostData createOne() throws PostServiceException {
         log.info("PostServiceImpl.createOne() start");
         PostData postData = dataTool.getPostData();
-        log.info("PostServiceImpl.createOne() count 2");
+//        log.info("PostServiceImpl.createOne() count 2");
         PostInfo postInfo = dataTool.getPostInfo();
         // 데이터 유효성 검사
         log.info("PostServiceImpl.createOne() data check");

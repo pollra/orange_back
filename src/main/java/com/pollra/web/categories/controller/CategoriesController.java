@@ -168,7 +168,7 @@ public class CategoriesController {
         }
     }
 
-    /* admin 확인
+    /* 권한 확인
     ResponseEntity<?> x = getResponseEntity();
     if (x != null) return x;
      */

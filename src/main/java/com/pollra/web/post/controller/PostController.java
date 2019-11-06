@@ -41,15 +41,10 @@ public class PostController {
     @PostMapping // /api/posts
     public ResponseEntity<?> createOnePost(){
         log.info("post 입력 확인");
-        if(!StringUtils.isEmpty(request.getAttribute("error"))){
-            log.warn("토큰 정보를 확인할 수 없습니다: {}",request.getAttribute("error").toString());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("토큰 정보를 확인할 수 없습니다."),HttpStatus.FORBIDDEN);
-        }
-        if(StringUtils.isEmpty(request.getAttribute("jwt-user"))&& StringUtils.isEmpty(request.getAttribute("jwt-auth"))){
-            log.warn("로그인된 유저의 정보를 읽는데 실패했습니다: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("토큰을 읽어들이는데 실패했습니다."),HttpStatus.FORBIDDEN);
-        }
-        log.warn("로그인된 유저 정보: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
+        // 토큰 확인
+        ResponseEntity<?> x = getResponseEntity();
+        if (x != null) return x;
+        //
         PostData resultPostData = null;
         PostInfo responsePostInfo = null;
         try {
@@ -149,10 +144,8 @@ public class PostController {
     @TokenCertification
     public ResponseEntity<?> updateOnePost(){
         try {
-            String certificationText = prevCertification();
-            if(!certificationText.equals("")){
-                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(certificationText), HttpStatus.FORBIDDEN);
-            }
+            ResponseEntity<?> x = getResponseEntity();
+            if (x != null) return x;
             postService.updateOne();
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK"), HttpStatus.OK);
         }catch (PostNullPointerException e){
@@ -171,10 +164,8 @@ public class PostController {
     public ResponseEntity<?> deleteOnePost(@PathVariable String num){
         // 데이터 받아서 처리
         try{
-            String certificationText = prevCertification();
-            if(!certificationText.equals("")){
-                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(certificationText), HttpStatus.FORBIDDEN);
-            }
+            ResponseEntity<?> x = getResponseEntity();
+            if (x != null) return x;
             postService.deleteOne(num);
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK"), HttpStatus.OK);
         }catch (PostNumberFormatException e){
@@ -199,5 +190,22 @@ public class PostController {
         }
         log.warn("로그인된 유저 정보: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
         return "";
+    }
+
+    /* 권한 확인
+    ResponseEntity<?> x = getResponseEntity();
+    if (x != null) return x;
+     */
+    private ResponseEntity<?> getResponseEntity() {
+        try{
+            if (request.getAttribute("error") != null && !(request.getAttribute("error").toString().isEmpty())) {
+                log.error(request.getAttribute("error").toString());
+                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
+            }
+        }catch (Throwable e){
+            log.error(e.getMessage());
+            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("인증 과정 오류발생"), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return null;
     }
 }
