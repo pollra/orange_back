@@ -238,12 +238,9 @@ public class UserRestController {
             return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 다시 확인해주세요"), HttpStatus.BAD_REQUEST);
         }
         try{
-            log.info("ㅇㅅㅇ");
 
             ResponseEntity<?> x = certification();
             if (x != null) return x;
-
-            log.info("ㅇㅅㅇ");
             log.info("넘어온 정보 num[{}] : num >= 0[{}]",num,(num >= 0));
             log.info("넘어온 정보 bool[{}]",bool);
             if(num < 0){

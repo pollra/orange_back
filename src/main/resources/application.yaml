@@ -20,10 +20,13 @@ spring:
         temp:
           use_jdbc_metadata_defaults: false
   datasource:
-    url: jdbc:postgresql://13.124.67.214:5432/orange
+    url: jdbc:postgresql://localhost:5432/orange
     driver-class-name: org.postgresql.Driver
     username: postgres
-    password: tmdrms159
+    password: sigenan0821@
+property:
+  api:
+    end-point: /api
 
 # 3. JWT
 #jwt:

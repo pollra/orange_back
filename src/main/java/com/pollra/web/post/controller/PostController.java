@@ -1,211 +1,45 @@
 package com.pollra.web.post.controller;
 
-import com.pollra.aop.jwt.anno.TokenCertification;
-import com.pollra.aop.jwt.anno.TokenCredential;
-import com.pollra.response.ApiDataDetail;
-import com.pollra.web.post.domain.*;
-import com.pollra.web.post.exception.PostServiceException;
-import com.pollra.web.post.exception.data.PostNotFoundException;
-import com.pollra.web.post.exception.other.*;
-import com.pollra.web.post.service.PostServiceImpl;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
+import com.pollra.web.post.form.PostForm.*;
+import com.pollra.web.post.service.PostService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
+import javax.validation.Valid;
+
+import static com.pollra.web.post.mapper.PostMapper.mapper;
 
 @RestController
-@RequestMapping("/api/posts")
-@Slf4j
-@CrossOrigin
+@RequiredArgsConstructor
+@RequestMapping("${property.api.end-point}")
 public class PostController {
-    private PostServiceImpl postService;
-    private HttpServletRequest request;
 
-    public PostController(PostServiceImpl postService, HttpServletRequest request) {
-        this.postService = postService;
-        this.request = request;
+    private final PostService postService;
+
+    @GetMapping("/blog/posts/page")
+    public Page<Response.FindAll> getPage(@Valid Pageable page){
+        return postService.getPage(page).map(mapper::toFindAll);
     }
 
-    @GetMapping("target/{numberPath}")
-    public RequestEntity<?> getOnePost(@PathVariable String numberPath){
-        return null;
+    @GetMapping("/blog/posts/{postId}")
+    public Response.FindOne get(@PathVariable("postId") Long postId) {
+        return mapper.toFindOne(postService.get(postId));
     }
 
-    @TokenCertification
-    @PostMapping // /api/posts
-    public ResponseEntity<?> createOnePost(){
-        log.info("post 입력 확인");
-        // 토큰 확인
-        ResponseEntity<?> x = getResponseEntity();
-        if (x != null) return x;
-        //
-        PostData resultPostData = null;
-        PostInfo responsePostInfo = null;
-        try {
-            log.info("one post insert logic start");
-            resultPostData = postService.createOne();
-            responsePostInfo = (PostInfo) postService.readOne(TargetPost.INFO, resultPostData.getNum().intValue());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("ok",responsePostInfo.getUri()),HttpStatus.OK);
-        }catch (Throwable e){
-            log.info(e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @PostMapping("/blog/posts")
+    public Long add(@Valid @RequestBody Request.Add add) {
+        return postService.add(mapper.toPost(add)).getId();
     }
 
-    @GetMapping("list/c/{category}")  // 카테고리 기준
-    public ResponseEntity<?> getPostList(@PathVariable String category){
-        category = category.toLowerCase();
-        log.warn("[list/{}] start",category);
-        String result = "";
-        int i=0;
-        List<PostList> postLists = null;
-        try{
-            postLists = postService.readList(PL_Range.CATEGORY, category);
-            List<PostListVo> listVos = new ArrayList<>();
-            for(PostList list : postLists){
-//                String title, String date, String img_path, String category
-                listVos.add(new PostListVo(list));
-                result += listVos.get(i++);
-            }
-            log.warn("[getPostList]백엔드 서버에서 보내는 데이터:{}",result);
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK",listVos), HttpStatus.OK);
-        }catch (IncorrentInsertDataException e){
-            log.info(e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()),HttpStatus.BAD_REQUEST);
-        }catch (Throwable e){
-            log.info(e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("알 수 없는 에러 발생"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @PutMapping("/blog/posts/{postId}")
+    public Long modify(@PathVariable("postId") Long postId, @Valid @RequestBody Request.Modify modify){
+        return postService.modify(mapper.toPost(postId, modify));
     }
 
-    @GetMapping("list/o/{owner}")    // 주인 기준
-    public ResponseEntity<?> getPostList_owner(@PathVariable String owner){
-        String result = "";
-        int i=0;
-        List<PostList> postLists = null;
-        try{
-            postLists = postService.readList(PL_Range.OWNER, "pollra");
-            List<PostListVo> listVos = new ArrayList<>();
-            for(PostList list : postLists){
-//                String title, String date, String img_path, String category
-                listVos.add(new PostListVo(list));
-                result += listVos.get(i++);
-            }
-            log.warn("[getPostList]백엔드 서버에서 보내는 데이터:{}",result);
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK",listVos), HttpStatus.OK);
-        }catch (IncorrentInsertDataException e){
-            log.info(e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()),HttpStatus.BAD_REQUEST);
-        }catch (Throwable e){
-            log.info(e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("알 수 없는 에러 발생"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * 포스팅 하나를 보냄
-     * @param num   포스팅 번호
-     * @return
-     */
-    @GetMapping("one/{num}")
-    public ResponseEntity<?> getOnePost(@PathVariable int num){
-        log.info("[/api/posts/one/{}] start",num);
-        try{
-            // url 을 기준으로 검색
-            // 포스트 번호를 가져오고
-            // 그 포스트번호대로 조회
-            PostInfo postInfo = (PostInfo) postService.readOne(TargetPost.LIST, num);
-            log.info("postInfo: "+postInfo.toString());
-            PostData postData = (PostData) postService.readOne(TargetPost.DATA, Integer.parseInt(postInfo.getNum()+""));
-            log.info("postData: "+postData.toString());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK", new PostDataVo(postData, postInfo)), HttpStatus.OK);
-        }catch (PostNotFoundException e){
-            log.error("[!]PostNotFound: "+e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()),HttpStatus.NOT_FOUND);
-        }catch (SelectionNotFoundException e){
-            log.error("[!]SelectionNotFound: "+e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("서버 내부 에러"),HttpStatus.INTERNAL_SERVER_ERROR);
-        }catch (Throwable e){
-            log.error("[!]Throwable: "+e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("데이터를 확인할 수 없습니다."),HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Update
-     */
-    @PutMapping("one")
-    @TokenCertification
-    public ResponseEntity<?> updateOnePost(){
-        try {
-            ResponseEntity<?> x = getResponseEntity();
-            if (x != null) return x;
-            postService.updateOne();
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK"), HttpStatus.OK);
-        }catch (PostNullPointerException e){
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
-        }catch (PostServiceException e){
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("예상치 못한 서버 에러"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Delete
-     * 블로그 글 삭제 ( JWT, 글 번호 )
-     */
-    @DeleteMapping("one/{num}")
-    @TokenCertification
-    public ResponseEntity<?> deleteOnePost(@PathVariable String num){
-        // 데이터 받아서 처리
-        try{
-            ResponseEntity<?> x = getResponseEntity();
-            if (x != null) return x;
-            postService.deleteOne(num);
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("OK"), HttpStatus.OK);
-        }catch (PostNumberFormatException e){
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
-        }catch (PostNotFoundException e){
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
-        }catch (IncorrectPostDataException e){
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(e.getMessage()), HttpStatus.BAD_REQUEST);
-        }catch (Throwable e){
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("예상치 못한 오류"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    private String prevCertification(){
-        if(!StringUtils.isEmpty(request.getAttribute("error"))){
-            log.warn("토큰 정보를 확인할 수 없습니다: {}",request.getAttribute("error").toString());
-            return "토큰 정보를 확인할 수 없습니다: "+request.getAttribute("error").toString();
-        }
-        if(StringUtils.isEmpty(request.getAttribute("jwt-user"))&& StringUtils.isEmpty(request.getAttribute("jwt-auth"))){
-            log.warn("로그인된 유저의 정보를 읽는데 실패했습니다: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
-            return "로그인된 유저의 정보를 읽는데 실패했습니다: jwt-user["+request.getAttribute("jwt-user")+"], jwt-auth["+request.getAttribute("jwt-auth")+"]";
-        }
-        log.warn("로그인된 유저 정보: jwt-user[{}], jwt-auth[{}]", request.getAttribute("jwt-user"), request.getAttribute("jwt-auth"));
-        return "";
-    }
-
-    /* 권한 확인
-    ResponseEntity<?> x = getResponseEntity();
-    if (x != null) return x;
-     */
-    private ResponseEntity<?> getResponseEntity() {
-        try{
-            if (request.getAttribute("error") != null && !(request.getAttribute("error").toString().isEmpty())) {
-                log.error(request.getAttribute("error").toString());
-                return new ResponseEntity<ApiDataDetail>(new ApiDataDetail(request.getAttribute("error").toString()), HttpStatus.BAD_REQUEST);
-            }
-        }catch (Throwable e){
-            log.error(e.getMessage());
-            return new ResponseEntity<ApiDataDetail>(new ApiDataDetail("인증 과정 오류발생"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return null;
+    @DeleteMapping("/blog/posts/{postId}")
+    public void remove(@PathVariable("postId") Long postId){
+        postService.remove(mapper.toPost(postId));
     }
 }

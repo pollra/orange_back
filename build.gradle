@@ -36,4 +36,11 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.10.7'
     implementation 'io.jsonwebtoken:jjwt-impl:0.10.7'
     implementation 'io.jsonwebtoken:jjwt-jackson:0.10.7'
+
+    // Apache Commons
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.11'
+
+    // MapStruct
+    implementation "org.mapstruct:mapstruct:1.3.1.Final"
+    annotationProcessor "org.mapstruct:mapstruct-processor:1.3.1.Final"
 }

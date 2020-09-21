@@ -46,13 +46,7 @@ public class JwtService {
      * @throws IllegalArgumentException
      * @throws JwtServiceException
      */
-    public void certification() throws ExpiredJwtException,
-            UnsupportedJwtException,
-            MalformedJwtException,
-            SignatureException,
-            IllegalArgumentException,
-            JwtDataAccessException,
-            JwtTamperingDetectionException{
+    public void certification() throws ExpiredJwtException, UnsupportedJwtException, MalformedJwtException, SignatureException, IllegalArgumentException, JwtDataAccessException, JwtTamperingDetectionException{
         log.info("certification start");
         var token = request.getHeader(JwtConstants.TOKEN_HEADER);
         // 저장한 토큰 데이터가 null 인가?
